@@ -260,6 +260,9 @@ pub fn in_table_public(app: &WordApp) -> bool {
     app.session.sel.focus.path.cell().is_some()
 }
 
+/// Height of the tab strip (Axion: pills 36 tall).
+pub const TAB_STRIP_H: f32 = 48.0;
+
 pub fn show(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     if app.session.view.read_mode {
@@ -311,25 +314,25 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     }
     // Tab strip.
     egui::Panel::top("tabs")
-        .exact_size(36.0)
+        .exact_size(TAB_STRIP_H)
         .show_separator_line(false)
-        .frame(egui::Frame::NONE.fill(t.tab_strip).inner_margin(egui::Margin { left: 12, right: 12, top: 2, bottom: 2 }))
+        .frame(egui::Frame::NONE.fill(t.tab_strip).inner_margin(egui::Margin { left: 16, right: 16, top: 2, bottom: 6 }))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
                 // Share, Editing mode and Comments keep their room; the tabs get what is left of it
                 // (#897, #2026), and the buttons give up their labels before a tab is drawn over them.
-                let share = tl!("Share");
+                let share = tl!("Save As");
                 let editing_label = if app.session.doc.settings.track_changes { tl!("Reviewing") } else { tl!("Editing") };
                 let comments = tl!("Comments");
-                let share_w = ui.ctx().fonts_mut(|f| f.layout_no_wrap(share.to_string(), medium(12.0), t.text).size().x);
+                let share_w = ui.ctx().fonts_mut(|f| f.layout_no_wrap(share.to_string(), semibold(14.0), t.text).size().x) + 22.0;
                 let spaced = |w: f32| w + 2.0;
                 let button_widths = |level: usize| -> f32 {
                     let labels = level == 0;
                     let share_full = (share_w + 36.0).max(74.0);
                     let share_button = if level < 2 { share_full } else { 30.0 };
-                    let editing = crate::widgets::icon_text_button_width(ui, editing_label, regular(12.0), true, labels);
-                    let comment = crate::widgets::icon_text_button_width(ui, comments, regular(12.0), false, labels);
+                    let editing = crate::widgets::icon_text_button_width(ui, editing_label, medium(13.5), true, labels) + 12.0;
+                    let comment = crate::widgets::icon_text_button_width(ui, comments, medium(13.5), false, labels) + 12.0;
                     // The gaps (6 + 4 + 8) and the strip's margin.
                     spaced(share_button) + spaced(editing) + spaced(comment) + 18.0 + 12.0
                 };
@@ -339,7 +342,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     .iter()
                     .zip(&labels)
                     .map(|((tab, custom), shown)| TabSpec {
-                        text_w: ui.ctx().fonts_mut(|f| f.layout_no_wrap(shown.to_string(), medium(12.5), t.text).size().x),
+                        text_w: ui.ctx().fonts_mut(|f| f.layout_no_wrap(shown.to_string(), medium(14.0), t.text).size().x) + 8.0,
                         file: tab == "File",
                         active: *tab == app.ui.tab,
                         contextual: !custom && wordcraft_engine::ribbon::CONTEXTUAL_TABS.contains(&tab.as_str()),
@@ -353,30 +356,64 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     // the Start screen (#3045).
                     ui.add_enabled_ui(app.has_document(), |ui| {
                         let (share_size, share_text) =
-                            if plan.buttons < 2 { (((share_w + 36.0).max(74.0), 24.0), true) } else { ((30.0, 24.0), false) };
+                            if plan.buttons < 2 { (((share_w + 36.0).max(74.0), 36.0), true) } else { ((36.0, 36.0), false) };
                         let (r, resp) = ui.allocate_exact_size(vec2(share_size.0, share_size.1), Sense::click());
-                        ui.painter().rect_filled(r, 12.0, if resp.hovered() { t.accent_text } else { t.accent });
-                        let icon_x = if share_text { r.min.x + 14.0 } else { r.center().x };
-                        icons::paint(
-                            ui.painter(),
-                            Rect::from_center_size(pos2(icon_x, r.center().y), vec2(14.0, 14.0)),
-                            "share",
-                            t.on_accent,
-                            t.on_accent,
+                        // Axion: the primary action is Save As (Word, PDF or Markdown), a raised blue pill.
+                        let lift = egui::Shadow { offset: [0, 4], blur: 12, spread: 0, color: t.accent.gamma_multiply(0.30) };
+                        ui.painter().add(lift.as_shape(r, egui::CornerRadius::same(18)));
+                        ui.painter().rect_filled(
+                            r,
+                            18.0,
+                            if resp.is_pointer_button_down_on() {
+                                t.accent_text.gamma_multiply(0.9)
+                            } else if resp.hovered() {
+                                t.accent_text
+                            } else {
+                                t.accent
+                            },
                         );
                         if share_text {
-                            ui.painter().text(pos2(r.min.x + 26.0, r.center().y), Align2::LEFT_CENTER, share, medium(12.0), t.on_accent);
+                            ui.painter().text(pos2(r.min.x + 16.0, r.center().y), Align2::LEFT_CENTER, share, semibold(14.0), t.on_accent);
+                            let c = pos2(r.max.x - 18.0, r.center().y);
+                            ui.painter().add(egui::Shape::line(
+                                vec![c + vec2(-4.0, -2.0), c + vec2(0.0, 2.0), c + vec2(4.0, -2.0)],
+                                Stroke::new(1.6, t.on_accent),
+                            ));
+                        } else {
+                            icons::paint(ui.painter(), Rect::from_center_size(r.center(), vec2(16.0, 16.0)), "saveAs", t.on_accent, t.on_accent);
                         }
                         resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, share));
-                        if resp.on_hover_text(tl!("Export a copy to share (PDF, Word document)")).clicked() {
-                            let _ = app.run("ui.backstage", json!({"value": true, "page": "export"}));
-                        }
+                        let resp = resp.on_hover_text(tl!("Save a copy as Word, PDF or Markdown")).on_hover_cursor(egui::CursorIcon::PointingHand);
+                        egui::Popup::menu(&resp).gap(8.0).show(|ui| {
+                            ui.set_min_width(260.0);
+                            for (badge, label, hint, ext) in [
+                                ("DOCX", "Word document", "Keeps every format", "docx"),
+                                ("PDF", "PDF", "To send, print or file", "pdf"),
+                                ("MD", "Markdown", "Clean text for AI and notes", "md"),
+                            ] {
+                                if crate::widgets::format_row(ui, badge, tl!(label), tl!(hint)).clicked() {
+                                    if ext == "docx" {
+                                        let _ = app.save_as(crate::file_dialogs::AfterSave::Nothing);
+                                    } else {
+                                        app.export_dialog(ext);
+                                    }
+                                    ui.close();
+                                }
+                            }
+                            ui.separator();
+                            if ui.add(egui::Button::new(egui::RichText::new(tl!("More formats…")).font(medium(13.0))).frame(false)).clicked() {
+                                let _ = app.run("ui.backstage", json!({"value": true, "page": "export"}));
+                                ui.close();
+                            }
+                        });
                         ui.add_space(6.0);
                         let track = app.session.doc.settings.track_changes;
+                        // Axion: Editing and Comments are white outlined pills.
+                        crate::widgets::pill_visuals(ui);
                         let mode = if plan.buttons == 0 {
-                            crate::widgets::icon_text_menu_button(ui, "pencil", editing_label, regular(12.0))
+                            crate::widgets::icon_text_menu_button(ui, "pencil", editing_label, medium(13.5))
                         } else {
-                            crate::widgets::icon_only_button(ui, "pencil", editing_label, regular(12.0), true)
+                            crate::widgets::icon_only_button(ui, "pencil", editing_label, medium(13.5), true)
                         };
                         egui::Popup::menu(&mode).show(|ui| {
                             if ui.selectable_label(!track, tl!(tl!("Editing — edit the document directly"))).clicked() {
@@ -388,11 +425,11 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                                 ui.close();
                             }
                         });
-                        ui.add_space(4.0);
+                        ui.add_space(6.0);
                         let comments_button = if plan.buttons == 0 {
-                            crate::widgets::icon_text_button(ui, "comment", comments, regular(12.0))
+                            crate::widgets::icon_text_button(ui, "comment", comments, medium(13.5))
                         } else {
-                            crate::widgets::icon_only_button(ui, "comment", comments, regular(12.0), false)
+                            crate::widgets::icon_only_button(ui, "comment", comments, medium(13.5), false)
                         };
                         if comments_button.clicked() {
                             let _ = app.run("view.commentsPane", json!({}));
@@ -408,7 +445,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             let shown = if custom { tab } else { tl!(tab) };
                             let w = plan.widths.get(i).copied().unwrap_or(0.0) - 2.0;
                             let cut = specs.get(i).is_some_and(|sp| sp.text_w + plan.pad > w + 0.5);
-                            let (r, resp) = ui.allocate_exact_size(vec2(w, 30.0), Sense::click());
+                            let (r, resp) = ui.allocate_exact_size(vec2(w, 36.0), Sense::click());
                             if app.ui.keytips == crate::keytips::Phase::Tabs {
                                 crate::keytips::record_tab(r, tab, &app.ui.keytip_prefix, &mut app.keytip_rects);
                             } else if app.ui.keytips == crate::keytips::Phase::Legacy {
@@ -419,21 +456,27 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, active, shown));
                             // Axion: tabs are pills. File is the accent pill; the current tab a raised card.
                             let file = tab == "File";
-                            let pill = r.shrink2(vec2(1.0, 2.0));
+                            let pill = r.shrink2(vec2(1.0, 1.0));
                             if file {
-                                ui.painter().rect_filled(pill, 13.0, if resp.hovered() { t.accent_text } else { t.accent });
+                                ui.painter().rect_filled(pill, 17.0, if resp.hovered() { t.accent_text } else { t.accent });
                             } else if active {
-                                let lift = egui::Shadow { offset: [0, 1], blur: 6, spread: 0, color: t.page_shadow };
-                                ui.painter().add(lift.as_shape(pill, egui::CornerRadius::same(13)));
-                                ui.painter().rect_filled(pill, 13.0, if t.dark { t.hover } else { egui::Color32::WHITE });
+                                let lift = egui::Shadow { offset: [0, 2], blur: 8, spread: 0, color: t.page_shadow };
+                                ui.painter().add(lift.as_shape(pill, egui::CornerRadius::same(17)));
+                                ui.painter().rect_filled(pill, 17.0, if t.dark { t.hover } else { egui::Color32::WHITE });
                             } else if resp.hovered() {
-                                ui.painter().rect_filled(pill, 13.0, t.hover);
+                                ui.painter().rect_filled(pill, 17.0, if t.dark { t.hover } else { t.pressed });
                             }
-                            let color = if file { t.on_accent } else if contextual || active { t.accent_text } else { t.text };
+                            let color = if file {
+                                t.on_accent
+                            } else if contextual || active {
+                                t.accent_text
+                            } else {
+                                t.text
+                            };
                             if cut {
                                 let mut job = egui::text::LayoutJob::single_section(
                                     shown.to_string(),
-                                    egui::text::TextFormat::simple(if active { semibold(12.5) } else { medium(12.5) }, color),
+                                    egui::text::TextFormat::simple(if active || file { semibold(14.0) } else { regular(14.0) }, color),
                                 );
                                 job.wrap = egui::text::TextWrapping {
                                     max_width: (w - plan.pad).max(1.0),
@@ -448,7 +491,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                                     r.center(),
                                     Align2::CENTER_CENTER,
                                     shown,
-                                    if active { semibold(12.5) } else { medium(12.5) },
+                                    if active || file { semibold(14.0) } else { regular(14.0) },
                                     color,
                                 );
                             }
@@ -469,7 +512,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             .map(|(((tab, _), shown), _)| (tab.as_str(), *shown))
                             .collect();
                         if !left_out.is_empty() {
-                            let (r, resp) = ui.allocate_exact_size(vec2(MORE_TABS_W, 30.0), Sense::click());
+                            let (r, resp) = ui.allocate_exact_size(vec2(MORE_TABS_W, 36.0), Sense::click());
                             if resp.hovered() {
                                 ui.painter().rect_filled(r.shrink2(vec2(0.0, 4.0)), 4.0, t.hover);
                             }
@@ -536,29 +579,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                                 Some(e) if e.custom => return custom_groups(app, ui, &e.groups),
                                 _ => {}
                             }
-                            match app.ui.tab.as_str() {
-                                "Home" => home(app, ui),
-                                "Insert" => insert(app, ui),
-                                "Draw" => draw(app, ui),
-                                "Design" => design(app, ui),
-                                "Layout" => layout(app, ui),
-                                "References" => references(app, ui),
-                                "Mailings" => mailings(app, ui),
-                                "Review" => review(app, ui),
-                                "View" => view(app, ui),
-                                "Developer" => developer(app, ui),
-                                "Zotero" => zotero(app, ui),
-                                "Help" => help(app, ui),
-                                "Table Design" => table_design(app, ui),
-                                "Table Layout" => table_layout(app, ui),
-                                "Equation" if app.session.math.is_some() => crate::equation_tab::show(app, ui),
-                                "Picture Format" => picture_format(app, ui),
-                                "Shape Format" => shape_format(app, ui),
-                                "SmartArt Design" => smart_art_design(app, ui),
-                                "Outlining" => outlining(app, ui),
-                                "Chart Design" => chart_design(app, ui),
-                                _ => home(app, ui),
-                            }
+                            tab_groups(app, ui);
                             if let Some(e) = entry {
                                 custom_groups(app, ui, &e.groups);
                             }
@@ -591,6 +612,33 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                 }
             });
         });
+}
+
+/// The groups of the current built-in tab (the full ribbon, and the compact one on a tablet or phone).
+pub(crate) fn tab_groups(app: &mut WordApp, ui: &mut Ui) {
+    match app.ui.tab.as_str() {
+        "Home" => home(app, ui),
+        "Insert" => insert(app, ui),
+        "Draw" => draw(app, ui),
+        "Design" => design(app, ui),
+        "Layout" => layout(app, ui),
+        "References" => references(app, ui),
+        "Mailings" => mailings(app, ui),
+        "Review" => review(app, ui),
+        "View" => view(app, ui),
+        "Developer" => developer(app, ui),
+        "Zotero" => zotero(app, ui),
+        "Help" => help(app, ui),
+        "Table Design" => table_design(app, ui),
+        "Table Layout" => table_layout(app, ui),
+        "Equation" if app.session.math.is_some() => crate::equation_tab::show(app, ui),
+        "Picture Format" => picture_format(app, ui),
+        "Shape Format" => shape_format(app, ui),
+        "SmartArt Design" => smart_art_design(app, ui),
+        "Outlining" => outlining(app, ui),
+        "Chart Design" => chart_design(app, ui),
+        _ => home(app, ui),
+    }
 }
 
 /// Custom groups (Customize Ribbon, #379): up to three commands as large buttons, more as small

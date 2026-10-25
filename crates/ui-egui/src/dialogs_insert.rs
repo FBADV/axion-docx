@@ -542,7 +542,7 @@ fn columns_ui(app: &mut WordApp, ui: &mut Ui, f: &mut ColumnsForm) -> bool {
             options.push(("selection", "Selected text"));
         }
         let shown = options.iter().find(|(k, _)| *k == f.apply).map(|(_, l)| *l).unwrap_or("This section");
-        egui::ComboBox::from_id_salt("columns_apply").selected_text(tl!(shown)).width(180.0).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("columns_apply").icon(crate::widgets::combo_icon).selected_text(tl!(shown)).width(180.0).show_ui(ui, |ui| {
             for (k, l) in &options {
                 ui.selectable_value(&mut f.apply, (*k).to_string(), tl!(l));
             }
@@ -866,7 +866,7 @@ fn symbol_ui(app: &mut WordApp, ui: &mut Ui, f: &mut SymbolForm) -> bool {
             ui.label(tl!("Subset:"));
             let current = f.selected.and_then(subset_of).unwrap_or("");
             let mut chosen = None;
-            egui::ComboBox::from_id_salt("symbol_subset").selected_text(current).width(170.0).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("symbol_subset").icon(crate::widgets::combo_icon).selected_text(current).width(170.0).show_ui(ui, |ui| {
                 for (name, a, b) in SUBSETS {
                     let i = f.chars.partition_point(|c| (*c as u32) < *a);
                     if f.chars.get(i).is_some_and(|c| (*c as u32) <= *b) && ui.selectable_label(*name == current, *name).clicked() {
@@ -1285,7 +1285,7 @@ fn field_ui(app: &mut WordApp, ui: &mut Ui, f: &mut FieldForm) -> bool {
             ui.label(egui::RichText::new(tl!("Pick a field from the list")).font(semibold(12.5)));
             ui.label(tl!("Categories:"));
             let shown = tl!(f.category.as_str()).to_string();
-            egui::ComboBox::from_id_salt("field_category").selected_text(shown).width(190.0).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("field_category").icon(crate::widgets::combo_icon).selected_text(shown).width(190.0).show_ui(ui, |ui| {
                 for c in FIELD_CATEGORIES {
                     ui.selectable_value(&mut f.category, (*c).to_string(), tl!(c));
                 }
@@ -1369,14 +1369,15 @@ fn field_options(ui: &mut Ui, f: &mut FieldForm, t: &Tokens) {
             }
             ui.label(tl!("Format:"));
             let shown = NUMBER_FORMATS.iter().find(|(v, _)| *v == f.number_format).map(|(_, l)| *l).unwrap_or("(none)");
-            egui::ComboBox::from_id_salt("field_number").selected_text(if shown == "(none)" { tl!(shown) } else { shown }).width(200.0).show_ui(
-                ui,
-                |ui| {
+            egui::ComboBox::from_id_salt("field_number")
+                .icon(crate::widgets::combo_icon)
+                .selected_text(if shown == "(none)" { tl!(shown) } else { shown })
+                .width(200.0)
+                .show_ui(ui, |ui| {
                     for (v, l) in NUMBER_FORMATS {
                         ui.selectable_value(&mut f.number_format, (*v).to_string(), if *l == "(none)" { tl!(l) } else { l });
                     }
-                },
-            );
+                });
         }
         FieldKind::Bookmark => {
             ui.label(tl!("Bookmark name:"));
@@ -1384,11 +1385,14 @@ fn field_options(ui: &mut Ui, f: &mut FieldForm, t: &Tokens) {
                 ui.add(egui::TextEdit::singleline(&mut f.target).desired_width(200.0));
                 ui.label(egui::RichText::new(tl!("The document has no bookmarks yet.")).small().color(t.text_dim));
             } else {
-                egui::ComboBox::from_id_salt("field_bookmark").selected_text(f.target.clone()).width(200.0).show_ui(ui, |ui| {
-                    for b in &f.bookmarks {
-                        ui.selectable_value(&mut f.target, b.clone(), b);
-                    }
-                });
+                egui::ComboBox::from_id_salt("field_bookmark").icon(crate::widgets::combo_icon).selected_text(f.target.clone()).width(200.0).show_ui(
+                    ui,
+                    |ui| {
+                        for b in &f.bookmarks {
+                            ui.selectable_value(&mut f.target, b.clone(), b);
+                        }
+                    },
+                );
             }
         }
         FieldKind::Merge => {
@@ -1406,11 +1410,14 @@ fn field_options(ui: &mut Ui, f: &mut FieldForm, t: &Tokens) {
         }
         FieldKind::Style => {
             ui.label(tl!("Style name:"));
-            egui::ComboBox::from_id_salt("field_style").selected_text(f.target.clone()).width(200.0).show_ui(ui, |ui| {
-                for n in &f.styles {
-                    ui.selectable_value(&mut f.target, n.clone(), n);
-                }
-            });
+            egui::ComboBox::from_id_salt("field_style").icon(crate::widgets::combo_icon).selected_text(f.target.clone()).width(200.0).show_ui(
+                ui,
+                |ui| {
+                    for n in &f.styles {
+                        ui.selectable_value(&mut f.target, n.clone(), n);
+                    }
+                },
+            );
             ui.add_space(4.0);
             for (c, label) in STYLEREF_SWITCHES {
                 let mut on = f.style_switches.contains(*c);

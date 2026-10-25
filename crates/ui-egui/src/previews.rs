@@ -521,17 +521,24 @@ pub fn style_gallery(app: &mut WordApp, ui: &mut Ui, state: &Value) {
     // A compact ribbon group (#662, #1285) trims the gallery to fewer tiles before it folds.
     let visible = if crate::ribbon_fit::compact(ui.ctx()) { STYLE_TILES_COMPACT } else { STYLE_TILES };
     crate::ribbon_fit::add_saving(ui.ctx(), (STYLE_TILES - STYLE_TILES_COMPACT) as f32 * 76.0);
-    let (area, _) = ui.allocate_exact_size(vec2(visible as f32 * 76.0 + 18.0, crate::widgets::CONTENT_H), Sense::hover());
-    ui.painter().rect(area.shrink(1.0), 4.0, t.input, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    let (area, _) = ui.allocate_exact_size(vec2(visible as f32 * 76.0 + 30.0, crate::widgets::CONTENT_H), Sense::hover());
+    // Axion: each style is a card; the current one has a blue edge.
     for (k, (id, name)) in styles.iter().skip(start).take(visible).enumerate() {
-        let r = Rect::from_min_size(pos2(area.min.x + 3.0 + k as f32 * 76.0, area.min.y + 3.0), vec2(74.0, area.height() - 6.0));
+        let r = Rect::from_min_size(pos2(area.min.x + 2.0 + k as f32 * 76.0, area.min.y + 1.0), vec2(70.0, area.height() - 2.0));
         let resp = ui.interact(r, ui.id().with(("style_tile", id)), Sense::click());
         let active = *id == current;
         resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, active, name));
+        let card = if t.dark { t.input } else { egui::Color32::WHITE };
         if active {
-            ui.painter().rect(r, 3.0, t.checked, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
-        } else if resp.hovered() {
-            ui.painter().rect_filled(r, 3.0, t.hover);
+            ui.painter().rect(r, 10.0, if t.dark { t.checked } else { card }, Stroke::new(2.0, t.accent), egui::StrokeKind::Inside);
+        } else {
+            ui.painter().rect(
+                r,
+                10.0,
+                if resp.hovered() { t.hover } else { card },
+                Stroke::new(1.0, if resp.hovered() { t.accent.gamma_multiply(0.5) } else { t.border }),
+                egui::StrokeKind::Inside,
+            );
         }
         let lang = crate::i18n::current().code();
         let dark_page = app.session.view.dark_mode;
@@ -551,15 +558,20 @@ pub fn style_gallery(app: &mut WordApp, ui: &mut Ui, state: &Value) {
         });
         if let Some(h) = tex {
             let sz = h.size_vec2() / ppp;
-            let ir = Rect::from_min_size(pos2(r.min.x + 3.0, r.min.y + 4.0), sz.min(vec2(68.0, 32.0)));
+            let shown = sz.min(vec2(62.0, 30.0));
+            let ir = Rect::from_min_size(pos2(r.center().x - shown.x / 2.0, r.min.y + 8.0), shown);
             let uv = Rect::from_min_max(pos2(0.0, 0.0), pos2((ir.width() / sz.x).min(1.0), (ir.height() / sz.y).min(1.0)));
             ui.painter().with_clip_rect(r).image(h.id(), ir, uv, preview_tint(&t, dark_page));
         }
-        let mut job = egui::text::LayoutJob::single_section(name.clone(), egui::TextFormat::simple(regular(10.5), t.text));
-        job.wrap = egui::text::TextWrapping::truncate_at_width(r.width() - 6.0);
+        let label_color = if active { t.accent_text } else { t.text_dim };
+        let mut job = egui::text::LayoutJob::single_section(
+            name.clone(),
+            egui::TextFormat::simple(if active { crate::theme::semibold(11.0) } else { regular(11.0) }, label_color),
+        );
+        job.wrap = egui::text::TextWrapping::truncate_at_width(r.width() - 10.0);
         let galley = ui.painter().layout_job(job);
-        let label_pos = pos2(r.center().x - galley.size().x / 2.0, r.max.y - 9.0 - galley.size().y / 2.0);
-        ui.painter().with_clip_rect(r).galley(label_pos, galley, t.text);
+        let label_pos = pos2(r.center().x - galley.size().x / 2.0, r.max.y - 11.0 - galley.size().y / 2.0);
+        ui.painter().with_clip_rect(r).galley(label_pos, galley, label_color);
         // Right-click a tile: the same style actions as the Styles pane.
         resp.context_menu(|ui| {
             if ui.button(tl!("Update to Match Selection")).clicked() {
@@ -576,15 +588,16 @@ pub fn style_gallery(app: &mut WordApp, ui: &mut Ui, state: &Value) {
         }
     }
     // Scroll arrows and "more".
-    let ar = Rect::from_min_max(pos2(area.max.x - 16.0, area.min.y + 2.0), pos2(area.max.x - 2.0, area.max.y - 2.0));
+    let ar = Rect::from_min_max(pos2(area.max.x - 24.0, area.min.y + 1.0), pos2(area.max.x - 2.0, area.max.y - 1.0));
+    ui.painter().rect_filled(ar, 10.0, t.hover);
     let thirds = ar.height() / 3.0;
     for (i, (icon, delta)) in [("chevronUp", -1i32), ("chevronDown", 1), ("more", 0)].iter().enumerate() {
         let br = Rect::from_min_size(pos2(ar.min.x, ar.min.y + thirds * i as f32), vec2(ar.width(), thirds));
         let resp = ui.interact(br, ui.id().with(("gal_arrow", i)), Sense::click());
         if resp.hovered() {
-            ui.painter().rect_filled(br, 2.0, t.hover);
+            ui.painter().rect_filled(br, 8.0, t.pressed);
         }
-        crate::icons::paint(ui.painter(), br.shrink(2.0), icon, t.icon, t.accent);
+        crate::icons::paint(ui.painter(), Rect::from_center_size(br.center(), vec2(14.0, 14.0)), icon, t.icon, t.accent);
         if resp.clicked() {
             if *delta == 0 {
                 let _ = app.run("view.stylesPane", json!({"value": true}));

@@ -1620,19 +1620,23 @@ fn page_paper_group(ui: &mut Ui, paper: &mut (f32, f32), landscape: &mut bool, c
         let label = ui.label(tl!(l.size));
         let entry = paper_entry(*paper).filter(|_| !*custom);
         let shown = tl!(entry.unwrap_or(l.custom));
-        let combo = egui::ComboBox::from_id_salt("ps_paper_size").width(180.0).height(400.0).selected_text(shown).show_ui(ui, |ui| {
-            for (n, w, h) in wordcraft_geom::PAPER_SIZES {
-                if ui.selectable_label(entry == Some(*n), tl!(n)).clicked() {
-                    let (w, h) = (w / ppu, h / ppu);
-                    *paper = if *landscape { (w.max(h), w.min(h)) } else { (w.min(h), w.max(h)) };
-                    *custom = false;
-                }
-            }
-            // Custom size keeps the numbers to edit, and stays chosen while they match a name.
-            if ui.selectable_label(entry.is_none(), tl!(l.custom)).clicked() {
-                *custom = true;
-            }
-        });
+        let combo =
+            egui::ComboBox::from_id_salt("ps_paper_size").icon(crate::widgets::combo_icon).width(180.0).height(400.0).selected_text(shown).show_ui(
+                ui,
+                |ui| {
+                    for (n, w, h) in wordcraft_geom::PAPER_SIZES {
+                        if ui.selectable_label(entry == Some(*n), tl!(n)).clicked() {
+                            let (w, h) = (w / ppu, h / ppu);
+                            *paper = if *landscape { (w.max(h), w.min(h)) } else { (w.min(h), w.max(h)) };
+                            *custom = false;
+                        }
+                    }
+                    // Custom size keeps the numbers to edit, and stays chosen while they match a name.
+                    if ui.selectable_label(entry.is_none(), tl!(l.custom)).clicked() {
+                        *custom = true;
+                    }
+                },
+            );
         combo.response.labelled_by(label.id);
     });
     egui::Grid::new("ps_paper").num_columns(4).show(ui, |ui| {
@@ -1972,7 +1976,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                         } else {
                             ALIGNS.iter().find(|(v, _)| v == align).map_or(align.as_str(), |(_, l)| tl!(l))
                         };
-                        egui::ComboBox::from_id_salt("para_align").selected_text(shown).show_ui(ui, |ui| {
+                        egui::ComboBox::from_id_salt("para_align").icon(crate::widgets::combo_icon).selected_text(shown).show_ui(ui, |ui| {
                             for (v, l) in ALIGNS {
                                 if ui.selectable_value(align, v.to_string(), tl!(l)).clicked() {
                                     mixed.remove("align");
@@ -2521,7 +2525,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                 ui.end_row();
                 ui.label(tl!("Alignment:"));
                 let shown = ALIGNS.iter().find(|(k, _)| k == align).map_or("Center", |(_, l)| l);
-                egui::ComboBox::from_id_salt("phonetic_align").selected_text(tl!(shown)).show_ui(ui, |ui| {
+                egui::ComboBox::from_id_salt("phonetic_align").icon(crate::widgets::combo_icon).selected_text(tl!(shown)).show_ui(ui, |ui| {
                     for (k, l) in ALIGNS {
                         ui.selectable_value(align, k.to_string(), tl!(l));
                     }
@@ -3056,11 +3060,15 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                 if fields.is_empty() {
                     ui.text_edit_singleline(field);
                 } else {
-                    egui::ComboBox::from_id_salt("merge_rule_field").selected_text(field.as_str()).width(200.0).show_ui(ui, |ui| {
-                        for f in fields.iter() {
-                            ui.selectable_value(field, f.clone(), f);
-                        }
-                    });
+                    egui::ComboBox::from_id_salt("merge_rule_field")
+                        .icon(crate::widgets::combo_icon)
+                        .selected_text(field.as_str())
+                        .width(200.0)
+                        .show_ui(ui, |ui| {
+                            for f in fields.iter() {
+                                ui.selectable_value(field, f.clone(), f);
+                            }
+                        });
                 }
                 ui.end_row();
                 ui.label(tl!("Equals:"));
@@ -3310,7 +3318,7 @@ fn recipient_filter(ui: &mut Ui, fields: &[String], filter: &mut RecipientFilter
     let names: Vec<String> = fields.iter().map(|f| f.trim().to_string()).filter(|f| !f.is_empty()).collect();
     let field_combo = |ui: &mut Ui, id: (&str, usize), value: &mut String, none: bool| {
         let shown = if value.is_empty() { tl!("(none)").to_string() } else { value.clone() };
-        egui::ComboBox::from_id_salt(id).width(130.0).selected_text(shown).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(id).icon(crate::widgets::combo_icon).width(130.0).selected_text(shown).show_ui(ui, |ui| {
             if none {
                 ui.selectable_value(value, String::new(), tl!("(none)"));
             }
@@ -3330,17 +3338,24 @@ fn recipient_filter(ui: &mut Ui, fields: &[String], filter: &mut RecipientFilter
             if i == 0 {
                 ui.label("");
             } else {
-                egui::ComboBox::from_id_salt(("rf_join", i)).width(60.0).selected_text(tl!(if r.or { "Or" } else { "And" })).show_ui(ui, |ui| {
-                    ui.selectable_value(&mut r.or, false, tl!("And"));
-                    ui.selectable_value(&mut r.or, true, tl!("Or"));
-                });
+                egui::ComboBox::from_id_salt(("rf_join", i))
+                    .icon(crate::widgets::combo_icon)
+                    .width(60.0)
+                    .selected_text(tl!(if r.or { "Or" } else { "And" }))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut r.or, false, tl!("And"));
+                        ui.selectable_value(&mut r.or, true, tl!("Or"));
+                    });
             }
             field_combo(ui, ("rf_field", i), &mut r.field, false);
-            egui::ComboBox::from_id_salt(("rf_op", i)).width(150.0).selected_text(tl!(r.op.label())).show_ui(ui, |ui| {
-                for op in FilterOp::ALL {
-                    ui.selectable_value(&mut r.op, op, tl!(op.label()));
-                }
-            });
+            egui::ComboBox::from_id_salt(("rf_op", i)).icon(crate::widgets::combo_icon).width(150.0).selected_text(tl!(r.op.label())).show_ui(
+                ui,
+                |ui| {
+                    for op in FilterOp::ALL {
+                        ui.selectable_value(&mut r.op, op, tl!(op.label()));
+                    }
+                },
+            );
             ui.add_enabled(r.op.has_value(), egui::TextEdit::singleline(&mut r.value).desired_width(130.0));
             if ui.add(egui::Button::new("×").small()).on_hover_text(tl!("Remove condition")).clicked() {
                 remove = Some(i);
@@ -3367,13 +3382,14 @@ fn recipient_filter(ui: &mut Ui, fields: &[String], filter: &mut RecipientFilter
             ui.label(tl!(if i == 0 { "Sort by" } else { "Then by" }));
             field_combo(ui, ("rs_field", i), field, true);
             ui.add_enabled_ui(!field.is_empty(), |ui| {
-                egui::ComboBox::from_id_salt(("rs_dir", i)).width(110.0).selected_text(tl!(if *desc { "Descending" } else { "Ascending" })).show_ui(
-                    ui,
-                    |ui| {
+                egui::ComboBox::from_id_salt(("rs_dir", i))
+                    .icon(crate::widgets::combo_icon)
+                    .width(110.0)
+                    .selected_text(tl!(if *desc { "Descending" } else { "Ascending" }))
+                    .show_ui(ui, |ui| {
                         ui.selectable_value(desc, false, tl!("Ascending"));
                         ui.selectable_value(desc, true, tl!("Descending"));
-                    },
-                );
+                    });
             });
             ui.end_row();
         }
@@ -3418,10 +3434,13 @@ fn table_properties(ui: &mut Ui, f: &mut TableForm) {
         ui.horizontal(|ui| {
             ui.add_enabled(f.row_height_on, len(&mut f.row_height, 0.02, unit));
             ui.add_enabled_ui(f.row_height_on, |ui| {
-                egui::ComboBox::from_id_salt("tp_rule").selected_text(tl!(if f.row_exact { "Exactly" } else { "At least" })).show_ui(ui, |ui| {
-                    ui.selectable_value(&mut f.row_exact, false, tl!("At least"));
-                    ui.selectable_value(&mut f.row_exact, true, tl!("Exactly"));
-                });
+                egui::ComboBox::from_id_salt("tp_rule")
+                    .icon(crate::widgets::combo_icon)
+                    .selected_text(tl!(if f.row_exact { "Exactly" } else { "At least" }))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut f.row_exact, false, tl!("At least"));
+                        ui.selectable_value(&mut f.row_exact, true, tl!("Exactly"));
+                    });
             });
         });
         ui.end_row();
@@ -3683,6 +3702,7 @@ fn manage_styles(app: &mut WordApp, ui: &mut Ui, alphabetical: &mut bool, select
     ui.horizontal(|ui| {
         ui.label(tl!("Sort order:"));
         egui::ComboBox::from_id_salt("manage_styles_sort")
+            .icon(crate::widgets::combo_icon)
             .selected_text(if *alphabetical { tl!("Alphabetical") } else { tl!("As Recommended") })
             .show_ui(ui, |ui| {
                 ui.selectable_value(alphabetical, false, tl!("As Recommended"));
@@ -3905,11 +3925,14 @@ fn goto_body(app: &mut WordApp, ui: &mut Ui, what: &mut GoToWhat, target: &mut S
             }
             GoToWhat::Bookmark => {
                 ui.label(tl!("Enter bookmark name:"));
-                egui::ComboBox::from_id_salt("goto_bookmark").width(220.0).selected_text(target.as_str()).show_ui(ui, |ui| {
-                    for b in &bookmarks {
-                        ui.selectable_value(target, b.clone(), b.as_str());
-                    }
-                });
+                egui::ComboBox::from_id_salt("goto_bookmark").icon(crate::widgets::combo_icon).width(220.0).selected_text(target.as_str()).show_ui(
+                    ui,
+                    |ui| {
+                        for b in &bookmarks {
+                            ui.selectable_value(target, b.clone(), b.as_str());
+                        }
+                    },
+                );
                 if bookmarks.is_empty() {
                     ui.label(egui::RichText::new(tl!("This document has no bookmarks.")).weak());
                 }
@@ -4087,7 +4110,7 @@ fn page_valign_combo(ui: &mut egui::Ui, valign: &mut wordcraft_doc::section::Pag
     ui.horizontal(|ui| {
         ui.label(tl!("Vertical alignment:"));
         let shown = CHOICES.iter().find(|(v, _)| v == valign).map_or("", |(_, l)| tl!(l));
-        egui::ComboBox::from_id_salt("ps_valign").selected_text(shown).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("ps_valign").icon(crate::widgets::combo_icon).selected_text(shown).show_ui(ui, |ui| {
             for (v, l) in CHOICES {
                 ui.selectable_value(valign, v, tl!(l));
             }

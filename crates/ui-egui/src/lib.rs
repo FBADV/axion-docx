@@ -24,7 +24,8 @@ pub mod a11y;
 pub mod a11y_pane;
 pub mod async_saves;
 pub mod autoscroll;
-pub mod backstage;
+pub mod axion_compact;
+mod backstage;
 pub mod canvas;
 pub mod caret_glide;
 pub mod chrome;
@@ -2492,9 +2493,7 @@ impl WordApp {
             backstage::show(self, ui);
         } else if !self.has_document() {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.
-            chrome::title_bar(self, ui);
-            ribbon::show(self, ui);
-            chrome::status_bar(self, ui);
+            self.axion_chrome(ui, &ctx);
             egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.canvas)).show(ui, |_| {});
         } else {
             let screen = chrome::Screen::of(&self.session.view);
@@ -2503,9 +2502,7 @@ impl WordApp {
             if screen != chrome::Screen::Normal {
                 chrome::screen_bar(self, ui, screen);
             } else {
-                chrome::title_bar(self, ui);
-                ribbon::show(self, ui);
-                chrome::status_bar(self, ui);
+                self.axion_chrome(ui, &ctx);
                 panes::show(self, ui);
             }
             let fill = if screen == chrome::Screen::Focus { chrome::FOCUS_CANVAS } else { t.canvas };
@@ -9275,5 +9272,28 @@ mod tests {
         h.step();
         h.step();
         assert!(h.state().session.view.read_mode && shown(&h, "Focus"), "Immersive Reader keeps the status bar");
+    }
+}
+
+impl WordApp {
+    /// The window's chrome for its width (Axion): the desktop title bar, ribbon and status pills;
+    /// on a tablet a top bar, pill tabs and a compact ribbon; on a phone a top bar and a ribbon sheet.
+    fn axion_chrome(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        match axion_compact::size(ctx) {
+            axion_compact::Size::Desktop => {
+                chrome::title_bar(self, ui);
+                ribbon::show(self, ui);
+                chrome::status_bar(self, ui);
+            }
+            axion_compact::Size::Tablet => {
+                axion_compact::tablet_top(self, ui);
+                axion_compact::tablet_ribbon(self, ui);
+                chrome::status_bar(self, ui);
+            }
+            axion_compact::Size::Phone => {
+                axion_compact::phone_top(self, ui);
+                axion_compact::phone_sheet(self, ui);
+            }
+        }
     }
 }

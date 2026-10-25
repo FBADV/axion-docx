@@ -7,10 +7,13 @@
   <link data-trunk rel="icon" href="../../assets/app-icon/wordcraft.ico" />
   <link data-trunk rel="rust" data-bin="wordcraft-web" data-wasm-opt="z" data-weak-refs />
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #E8EEF6; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #F3F5F9; }
     #wordcraft_canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     #wordcraft_loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
       color: #4F5B70; font: 14px system-ui, sans-serif; pointer-events: none; }
+    /* Axion: touch never selects the interface or pops the browser's callouts. */
+    html, body, canvas { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    canvas { touch-action: none; }
   </style>
 </head>
 <body>

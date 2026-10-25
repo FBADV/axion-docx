@@ -197,9 +197,9 @@ pub(crate) fn bg(ui: &Ui, r: Rect, resp: &Response, checked: bool, t: &Tokens) {
     } else {
         return;
     };
-    ui.painter().rect_filled(r, CornerRadius::same(4), fill);
+    ui.painter().rect_filled(r, CornerRadius::same(8), fill);
     if checked {
-        ui.painter().rect_stroke(r, CornerRadius::same(4), Stroke::new(1.0, t.accent.linear_multiply(0.5)), egui::StrokeKind::Inside);
+        ui.painter().rect_stroke(r, CornerRadius::same(8), Stroke::new(1.0, t.accent.linear_multiply(0.35)), egui::StrokeKind::Inside);
     }
 }
 
@@ -377,7 +377,19 @@ pub fn menu_button(
         let w = (galley_w + 22.0).max(44.0);
         let (r, resp) = ui.allocate_exact_size(vec2(w, CONTENT_H), Sense::click());
         keytip_badge(ui, r, "menu", tip);
-        bg(ui, r, &resp, false, &t);
+        if id == "edit.paste" {
+            // Axion: Paste is the soft blue tile that opens the Home tab.
+            let fill = if resp.is_pointer_button_down_on() {
+                t.pressed
+            } else if resp.hovered() {
+                t.hover.lerp_to_gamma(t.checked, 0.5)
+            } else {
+                t.checked
+            };
+            ui.painter().rect_filled(r.shrink2(vec2(0.0, 1.0)), CornerRadius::same(12), fill);
+        } else {
+            bg(ui, r, &resp, false, &t);
+        }
         icons::paint(ui.painter(), Rect::from_center_size(pos2(r.center().x, r.min.y + BIG_ICON_Y), vec2(32.0, 32.0)), icon, c, a);
         let lines: Vec<&str> = label.unwrap_or("").split('\n').collect();
         let mut y = r.min.y + BIG_LABEL_Y;
@@ -870,7 +882,7 @@ fn combo_impl(
                 }
             });
         }
-        let te = egui::TextEdit::singleline(&mut text).id(te_id).desired_width(width - 16.0).font(regular(12.0)).margin(vec2(4.0, 3.0));
+        let te = egui::TextEdit::singleline(&mut text).id(te_id).desired_width(width - 22.0).font(regular(13.0)).margin(vec2(8.0, 5.0));
         // The arrow's box is painted here, under the field, once its size is known.
         let arrow_bg = ui.painter().add(egui::Shape::Noop);
         let resp = ui.add(te);
@@ -930,7 +942,7 @@ fn combo_impl(
         } else if enter {
             out = Some(text.clone());
         }
-        let (ar, aresp) = ui.allocate_exact_size(vec2(16.0, resp.rect.height()), Sense::click());
+        let (ar, aresp) = ui.allocate_exact_size(vec2(22.0, resp.rect.height()), Sense::click());
         if !tip.is_empty() {
             let arrow_name = crate::i18n::fmt(tl!("{name} options"), &[("name", tip)]);
             aresp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), &arrow_name));
@@ -949,7 +961,9 @@ fn combo_impl(
             show_hint(&resp, tip, &[]);
             show_hint(&aresp, tip, &[]);
         }
-        icons::paint(ui.painter(), Rect::from_center_size(ar.center(), vec2(DROPDOWN, DROPDOWN)), "dropdown", t.icon, t.accent);
+        // Axion: a thin chevron, not a filled triangle.
+        let c = ar.center();
+        ui.painter().add(egui::Shape::line(vec![c + vec2(-4.0, -2.0), c + vec2(0.0, 2.0), c + vec2(4.0, -2.0)], Stroke::new(1.5, t.text_dim)));
         // The list drops from the box's left edge, as in Word, not from the arrow (#535).
         // The font list closes on a chosen entry or a click outside it, not on its headings.
         let close = if search { egui::PopupCloseBehavior::CloseOnClickOutside } else { egui::PopupCloseBehavior::CloseOnClick };
@@ -1877,4 +1891,55 @@ mod tests {
         })
         .drop_without_applying_deltas();
     }
+}
+
+/// The drop-down mark of every combo box: a thin chevron (Axion), not egui's filled triangle.
+pub fn combo_icon(ui: &egui::Ui, rect: Rect, visuals: &egui::style::WidgetVisuals, open: bool) {
+    let t = Tokens::get(ui.ctx());
+    let c = rect.center();
+    let (w, h) = (rect.width().min(10.0) * 0.5, rect.width().min(10.0) * 0.28);
+    let pts = if open { [c + vec2(-w, h), c + vec2(0.0, -h), c + vec2(w, h)] } else { [c + vec2(-w, -h), c + vec2(0.0, h), c + vec2(w, -h)] };
+    let color = if ui.is_enabled() { t.text_dim.lerp_to_gamma(visuals.fg_stroke.color, 0.3) } else { t.text_disabled };
+    ui.painter().add(egui::Shape::line(pts.to_vec(), Stroke::new(1.6, color)));
+}
+
+/// Axion pill buttons for the rest of this `ui`: white, outlined, fully rounded, 36 tall.
+pub fn pill_visuals(ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let w = &mut ui.visuals_mut().widgets;
+    for (state, fill, stroke) in [
+        (&mut w.inactive, if t.dark { t.panel } else { Color32::WHITE }, Stroke::new(1.0, t.border_strong)),
+        (&mut w.hovered, t.hover, Stroke::new(1.0, t.accent.gamma_multiply(0.55))),
+        (&mut w.active, t.pressed, Stroke::new(1.0, t.accent)),
+        (&mut w.open, t.hover, Stroke::new(1.0, t.accent)),
+    ] {
+        state.weak_bg_fill = fill;
+        state.bg_fill = fill;
+        state.bg_stroke = stroke;
+        state.corner_radius = egui::CornerRadius::same(18);
+        state.expansion = 0.0;
+    }
+    ui.spacing_mut().button_padding = vec2(14.0, 9.0);
+}
+
+/// One format of a Save As menu: a tinted badge, the format's name and a line about it.
+pub fn format_row(ui: &mut Ui, badge: &str, label: &str, hint: &str) -> Response {
+    let t = Tokens::get(ui.ctx());
+    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width().max(260.0), 54.0), Sense::click());
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label));
+    if resp.hovered() || resp.has_focus() {
+        ui.painter().rect_filled(rect, 12.0, if resp.is_pointer_button_down_on() { t.pressed } else { t.checked });
+    }
+    let hue = match badge {
+        "DOCX" => Color32::from_rgb(0x2C, 0x5F, 0xD3),
+        "MD" => Color32::from_rgb(0x0D, 0x74, 0x69),
+        "PDF" => Color32::from_rgb(0xC6, 0x36, 0x2B),
+        _ => t.text_dim,
+    };
+    let chip = Rect::from_min_size(rect.min + vec2(10.0, 10.0), vec2(38.0, 34.0));
+    ui.painter().rect_filled(chip, 10.0, hue.gamma_multiply(if t.dark { 0.30 } else { 0.17 }));
+    ui.painter().text(chip.center(), Align2::CENTER_CENTER, badge, crate::theme::semibold(10.5), if t.dark { t.text } else { hue });
+    ui.painter().text(rect.min + vec2(60.0, 19.0), Align2::LEFT_CENTER, label, crate::theme::semibold(14.0), t.text);
+    ui.painter().text(rect.min + vec2(60.0, 37.0), Align2::LEFT_CENTER, hint, regular(12.5), t.text_dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

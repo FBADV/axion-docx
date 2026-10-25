@@ -641,7 +641,7 @@ fn setup_ui(app: &mut WordApp, ui: &mut Ui, st: &mut RestrictPane) {
     ui.checkbox(&mut st.editing, tl!("Only allow this kind of editing:"));
     ui.add_enabled_ui(st.editing, |ui| {
         let current = EDIT_MODES.get(st.mode).map(|m| m.1).unwrap_or("");
-        egui::ComboBox::from_id_salt("restrict_mode").selected_text(tl!(current)).width(220.0).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("restrict_mode").icon(crate::widgets::combo_icon).selected_text(tl!(current)).width(220.0).show_ui(ui, |ui| {
             for (i, (_, label)) in EDIT_MODES.iter().enumerate() {
                 ui.selectable_value(&mut st.mode, i, tl!(label));
             }

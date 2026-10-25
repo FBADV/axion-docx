@@ -1068,6 +1068,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     let sepia_page = read_mode && app.session.view.read_page_color == ReadPageColor::Sepia;
     let dark_paper = wordcraft_render::DARK_PAPER;
     let show_ruler = app.session.view.ruler
+        && crate::axion_compact::size(ui.ctx()) == crate::axion_compact::Size::Desktop
         && app.session.view.mode == wordcraft_layout::ViewMode::Print
         && !app.session.view.read_mode
         && crate::chrome::Screen::of(&app.session.view) == crate::chrome::Screen::Normal;
@@ -1283,7 +1284,9 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         // and Escape did nothing in Read Mode until the reader clicked a page (#1772).
         // It also keeps the focus when Focus hides the rulers (#1678).
         ui.advance_cursor_after_rect(content);
-        let resp = ui.interact(content, egui::Id::new("wordcraft_canvas"), Sense::click_and_drag());
+        // On a touch screen a drag scrolls the pages (the scroll area takes it); a tap places the caret.
+        let sense = if crate::axion_compact::touch(ui.ctx()) { Sense::click() } else { Sense::click_and_drag() };
+        let resp = ui.interact(content, egui::Id::new("wordcraft_canvas"), sense);
         if let Some(tr) = scroll_target {
             ui.scroll_to_rect(Rect::from_min_size(ui.min_rect().min + tr.min.to_vec2(), tr.size()), None);
         }

@@ -85,7 +85,7 @@ const ORIENTATIONS: [(&str, &str); 3] = [("auto", "Auto orientation"), ("portrai
 fn choice(ui: &mut Ui, salt: &str, current: &mut String, items: &[(&str, &str)]) -> bool {
     let shown = items.iter().find(|(id, _)| *id == current.as_str()).map_or("", |(_, l)| *l);
     let mut changed = false;
-    egui::ComboBox::from_id_salt(salt).width(260.0).selected_text(tl!(shown)).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt(salt).icon(crate::widgets::combo_icon).width(260.0).selected_text(tl!(shown)).show_ui(ui, |ui| {
         for (id, label) in items {
             if ui.selectable_label(current == id, tl!(label)).clicked() && current != id {
                 *current = (*id).to_string();

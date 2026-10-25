@@ -5,8 +5,8 @@ use std::sync::Arc;
 use egui::{Align2, Color32, CornerRadius, FontData, FontDefinitions, FontFamily, FontId, Rect, Stroke, Visuals};
 
 /// Axion DocX's app colour (and its darker ink for text on light backgrounds).
-pub const APP_COLOR: Color32 = Color32::from_rgb(0x2F, 0x6B, 0xDE);
-pub const APP_INK: Color32 = Color32::from_rgb(0x23, 0x57, 0xC2);
+pub const APP_COLOR: Color32 = Color32::from_rgb(0x2C, 0x5F, 0xD3);
+pub const APP_INK: Color32 = Color32::from_rgb(0x1F, 0x4B, 0xB0);
 
 /// The interface theme setting (File › Options › General, View › Interface Theme): a fixed light or
 /// dark palette, or `System`, which follows the OS light/dark appearance live (#115). Dark page
@@ -304,34 +304,34 @@ impl Tokens {
     pub fn light() -> Self {
         Tokens {
             dark: false,
-            title_bar: Color32::from_rgb(0xE6, 0xEF, 0xFB),
-            ribbon: Color32::from_rgb(0xF6, 0xF9, 0xFE),
-            tab_strip: Color32::from_rgb(0xE6, 0xEF, 0xFB),
-            canvas: Color32::from_rgb(0xE8, 0xEE, 0xF6),
-            panel: Color32::from_rgb(0xF7, 0xFA, 0xFE),
-            border: Color32::from_rgb(0xDC, 0xE4, 0xF0),
-            border_strong: Color32::from_rgb(0xC3, 0xCF, 0xE2),
-            text: Color32::from_rgb(0x1B, 0x24, 0x33),
-            text_dim: Color32::from_rgb(0x4F, 0x5B, 0x70),
+            title_bar: Color32::from_rgb(0xF3, 0xF5, 0xF9),
+            ribbon: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+            tab_strip: Color32::from_rgb(0xF3, 0xF5, 0xF9),
+            canvas: Color32::from_rgb(0xF3, 0xF5, 0xF9),
+            panel: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+            border: Color32::from_rgb(0xE7, 0xEA, 0xF0),
+            border_strong: Color32::from_rgb(0xD3, 0xD9, 0xE3),
+            text: Color32::from_rgb(0x1A, 0x22, 0x32),
+            text_dim: Color32::from_rgb(0x5A, 0x64, 0x76),
             text_disabled: Color32::from_rgb(0xA3, 0xAE, 0xC0),
-            icon: Color32::from_rgb(0x34, 0x42, 0x5A),
-            hover: Color32::from_rgb(0xE1, 0xEB, 0xFA),
-            pressed: Color32::from_rgb(0xD2, 0xE0, 0xF6),
-            checked: Color32::from_rgb(0xD6, 0xE4, 0xFB),
+            icon: Color32::from_rgb(0x34, 0x3D, 0x4F),
+            hover: Color32::from_rgb(0xF1, 0xF4, 0xF9),
+            pressed: Color32::from_rgb(0xE6, 0xEB, 0xF3),
+            checked: Color32::from_rgb(0xED, 0xF3, 0xFE),
             accent: APP_COLOR,
-            nav: Color32::from_rgb(0xE2, 0xEC, 0xFB),
+            nav: Color32::from_rgb(0xF3, 0xF5, 0xF9),
             accent_text: APP_INK,
             on_accent: Color32::WHITE,
             input: Color32::WHITE,
-            input_border: Color32::from_rgb(0x98, 0xA6, 0xBC),
-            group_label: Color32::from_rgb(0x5F, 0x6B, 0x80),
+            input_border: Color32::from_rgb(0xA9, 0xB6, 0xC9),
+            group_label: Color32::from_rgb(0x5F, 0x69, 0x7B),
             ruler: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-            ruler_margin: Color32::from_rgb(0xD6, 0xDF, 0xEC),
+            ruler_margin: Color32::from_rgb(0xE7, 0xEA, 0xF0),
             ruler_tick: Color32::from_rgb(0x5F, 0x6B, 0x80),
-            status_bar: Color32::from_rgb(0xE6, 0xEF, 0xFB),
-            selection: Color32::from_rgba_unmultiplied(0x2F, 0x6B, 0xDE, 0x48),
+            status_bar: Color32::from_rgb(0xF3, 0xF5, 0xF9),
+            selection: Color32::from_rgba_unmultiplied(0x2C, 0x5F, 0xD3, 0x40),
             find_highlight: Color32::from_rgba_unmultiplied(0xFF, 0xE0, 0x3D, 0x90),
-            page_shadow: Color32::from_rgba_unmultiplied(0x16, 0x2A, 0x55, 0x24),
+            page_shadow: Color32::from_rgba_unmultiplied(0x10, 0x18, 0x28, 0x1C),
             handle: Color32::WHITE,
             handle_shadow: Color32::from_rgba_unmultiplied(0, 0, 0, 0x28),
             guide: Color32::from_rgb(0xC0, 0x28, 0x8C),
@@ -339,7 +339,7 @@ impl Tokens {
             crop_handle: Color32::BLACK,
             crop_dim: Color32::from_rgba_unmultiplied(0x30, 0x30, 0x30, 0xE0),
             balloon: Color32::WHITE,
-            markup_area: Color32::from_rgb(0xF1, 0xF5, 0xFB),
+            markup_area: Color32::from_rgb(0xF3, 0xF5, 0xF9),
             markup_edge: Color32::from_rgb(0xDC, 0xE4, 0xF0),
             resolved_text: Color32::from_rgb(0x1B, 0x6B, 0x42),
             author_colors: [
@@ -359,7 +359,7 @@ impl Tokens {
             menu: Color32::WHITE,
             blue: Color32::from_rgb(0x2F, 0x6F, 0xD0),
             red: Color32::from_rgb(0xD1, 0x3B, 0x3B),
-            green: Color32::from_rgb(0x2E, 0x8B, 0x57),
+            green: Color32::from_rgb(0x0D, 0x74, 0x69),
             orange: Color32::from_rgb(0xE0, 0x7B, 0x1F),
             close_hover: Color32::from_rgb(0xC4, 0x2B, 0x1C),
             close_pressed: Color32::from_rgb(0xA6, 0x23, 0x16),
@@ -372,7 +372,7 @@ impl Tokens {
             title_bar: Color32::from_rgb(0x11, 0x18, 0x27),
             ribbon: Color32::from_rgb(0x17, 0x20, 0x33),
             tab_strip: Color32::from_rgb(0x11, 0x18, 0x27),
-            canvas: Color32::from_rgb(0x0D, 0x13, 0x1E),
+            canvas: Color32::from_rgb(0x10, 0x15, 0x1E),
             panel: Color32::from_rgb(0x19, 0x23, 0x3A),
             border: Color32::from_rgb(0x2B, 0x38, 0x50),
             border_strong: Color32::from_rgb(0x43, 0x53, 0x72),
@@ -750,15 +750,28 @@ pub fn apply(ctx: &egui::Context, appearance: Appearance) {
     ctx.set_visuals_of(egui::Theme::Light, visuals(&Tokens::light()));
     ctx.set_visuals_of(egui::Theme::Dark, visuals(&Tokens::dark()));
     ctx.all_styles_mut(|s| {
-        s.spacing.item_spacing = egui::vec2(6.0, 4.0);
-        s.spacing.button_padding = egui::vec2(10.0, 4.0);
-        s.spacing.interact_size = egui::vec2(24.0, 22.0);
+        // Axion: roomier controls, dialogs with real margins and calm, thin scroll bars.
+        s.spacing.item_spacing = egui::vec2(8.0, 6.0);
+        s.spacing.button_padding = egui::vec2(12.0, 5.0);
+        s.spacing.interact_size = egui::vec2(24.0, 26.0);
         s.spacing.menu_margin = egui::Margin::same(6);
-        s.text_styles.insert(egui::TextStyle::Body, regular(12.5));
-        s.text_styles.insert(egui::TextStyle::Button, regular(12.5));
-        s.text_styles.insert(egui::TextStyle::Small, regular(10.5));
-        s.text_styles.insert(egui::TextStyle::Heading, semibold(17.0));
+        s.spacing.window_margin = egui::Margin::symmetric(20, 14);
+        s.spacing.icon_width = 16.0;
+        s.spacing.icon_width_inner = 9.0;
+        s.spacing.icon_spacing = 7.0;
+        s.spacing.scroll = egui::style::ScrollStyle::floating();
+        s.spacing.scroll.floating_width = 4.0;
+        s.spacing.scroll.bar_width = 8.0;
+        s.spacing.scroll.dormant_handle_opacity = 0.0;
+        s.spacing.scroll.active_handle_opacity = 0.35;
+        s.spacing.scroll.interact_handle_opacity = 0.6;
+        s.text_styles.insert(egui::TextStyle::Body, regular(13.0));
+        s.text_styles.insert(egui::TextStyle::Button, regular(13.0));
+        s.text_styles.insert(egui::TextStyle::Small, regular(11.0));
+        s.text_styles.insert(egui::TextStyle::Heading, semibold(15.0));
         s.interaction.tooltip_delay = 0.45;
+        // Interface text is not document text: a drag or a long press never selects it.
+        s.interaction.selectable_labels = false;
     });
     ctx.options_mut(|o| {
         o.fallback_theme = egui::Theme::Light;
@@ -784,9 +797,9 @@ fn visuals(t: &Tokens) -> Visuals {
     v.window_fill = t.menu;
     v.extreme_bg_color = t.input;
     v.faint_bg_color = t.panel;
-    v.window_stroke = Stroke::new(1.0, t.border_strong);
-    v.window_corner_radius = CornerRadius::same(14);
-    v.menu_corner_radius = CornerRadius::same(10);
+    v.window_stroke = Stroke::new(1.0, t.border);
+    v.window_corner_radius = CornerRadius::same(16);
+    v.menu_corner_radius = CornerRadius::same(12);
     v.selection.bg_fill = t.selection;
     v.selection.stroke = Stroke::new(1.0, t.accent);
     v.hyperlink_color = t.accent_text;
@@ -796,20 +809,41 @@ fn visuals(t: &Tokens) -> Visuals {
     v.widgets.inactive.weak_bg_fill = t.input;
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.input_border);
     v.widgets.inactive.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.inactive.corner_radius = CornerRadius::same(7);
+    v.widgets.inactive.corner_radius = CornerRadius::same(5);
+    v.widgets.inactive.expansion = 0.0;
     v.widgets.hovered.bg_fill = t.hover;
     v.widgets.hovered.weak_bg_fill = t.hover;
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.border_strong);
     v.widgets.hovered.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.hovered.corner_radius = CornerRadius::same(7);
+    v.widgets.hovered.corner_radius = CornerRadius::same(5);
+    v.widgets.hovered.expansion = 0.0;
     v.widgets.active.bg_fill = t.pressed;
     v.widgets.active.weak_bg_fill = t.pressed;
     v.widgets.active.fg_stroke = Stroke::new(1.0, t.text);
-    v.widgets.active.corner_radius = CornerRadius::same(7);
-    v.widgets.open.bg_fill = t.pressed;
-    v.widgets.open.weak_bg_fill = t.pressed;
-    v.popup_shadow = egui::Shadow { offset: [0, 4], blur: 16, spread: 0, color: Color32::from_black_alpha(if t.dark { 120 } else { 40 }) };
-    v.window_shadow = egui::Shadow { offset: [0, 8], blur: 28, spread: 0, color: Color32::from_black_alpha(if t.dark { 140 } else { 50 }) };
+    v.widgets.active.corner_radius = CornerRadius::same(5);
+    v.widgets.active.expansion = 0.0;
+    v.widgets.open.bg_fill = t.hover;
+    // The open state also fills an active window's title bar: keep it the window's own colour.
+    v.widgets.open.weak_bg_fill = t.menu;
+    v.widgets.open.bg_stroke = Stroke::new(1.0, t.accent);
+    v.widgets.open.corner_radius = CornerRadius::same(5);
+    v.widgets.open.expansion = 0.0;
+    v.widgets.noninteractive.corner_radius = CornerRadius::same(5);
+    v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.accent.gamma_multiply(0.55));
+    v.widgets.active.bg_stroke = Stroke::new(1.0, t.accent);
+    v.popup_shadow = egui::Shadow {
+        offset: [0, 8],
+        blur: 24,
+        spread: 0,
+        color: if t.dark { Color32::from_black_alpha(120) } else { Color32::from_rgba_unmultiplied(0x16, 0x2A, 0x55, 30) },
+    };
+    v.window_shadow = egui::Shadow {
+        offset: [0, 16],
+        blur: 44,
+        spread: 0,
+        color: if t.dark { Color32::from_black_alpha(140) } else { Color32::from_rgba_unmultiplied(0x16, 0x2A, 0x55, 40) },
+    };
+    v.interact_cursor = Some(egui::CursorIcon::PointingHand);
     v
 }
 

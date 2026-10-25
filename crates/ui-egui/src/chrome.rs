@@ -282,10 +282,10 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
     let mac = app.integrated_titlebar;
     let bar = app.mac_titlebar;
     let left = if mac { bar.content_left as i8 } else { 8 };
-    let control_h = if mac { 22.0 } else { 26.0 };
+    let control_h = if mac { (bar.height - 6.0).clamp(22.0, 34.0) } else { 34.0 };
     egui::Panel::top("title_bar")
-        .exact_size(if mac { bar.height } else { 38.0 })
-        .frame(egui::Frame::NONE.fill(t.title_bar).inner_margin(egui::Margin { left, right: 10, top: 0, bottom: 0 }))
+        .exact_size(if mac { bar.height } else { 56.0 })
+        .frame(egui::Frame::NONE.fill(t.title_bar).inner_margin(egui::Margin { left: if mac { left } else { 16 }, right: 16, top: 0, bottom: 0 }))
         .show(ui, |ui| {
             let full = ui.max_rect();
             // Drag the window by the title bar (integrated title bar on macOS).
@@ -302,11 +302,11 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
                 // Axion: the mark and the app's name open the title bar.
-                let (mark, _) = ui.allocate_exact_size(vec2(control_h, control_h), Sense::hover());
+                let (mark, _) = ui.allocate_exact_size(vec2(control_h.min(30.0), control_h.min(30.0)), Sense::hover());
                 axion_mark(ui.painter(), mark);
-                ui.add_space(6.0);
-                ui.add(egui::Label::new(egui::RichText::new("Axion DocX").font(semibold(13.0)).color(t.text)).selectable(false));
-                ui.add_space(14.0);
+                ui.add_space(10.0);
+                ui.add(egui::Label::new(egui::RichText::new("Axion DocX").font(semibold(15.0)).color(t.text)).selectable(false));
+                ui.add_space(22.0);
                 // AutoSave switch: greyed out, with the reason as its tooltip, when AutoSave can't
                 // cover the document (#196, #176); clicking it then offers Save As where that helps.
                 let block = app.autosave_block();
@@ -314,18 +314,20 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                 let color = if block.is_some() { t.text_dim.gamma_multiply(0.6) } else { t.text_dim };
                 // The text is part of the switch (#3370): clicking it toggles AutoSave, and chrome
                 // text is not document text to select (double-clicking it copied "AutoSave").
+                // Axion: the switch first (green when on), then its label.
+                let (r, resp) = ui.allocate_exact_size(vec2(34.0, 20.0), Sense::click());
+                ui.add_space(8.0);
                 let text = ui.add(
-                    egui::Label::new(egui::RichText::new(tl!("AutoSave")).font(regular(11.5)).color(color)).selectable(false).sense(Sense::click()),
+                    egui::Label::new(egui::RichText::new(tl!("AutoSave")).font(regular(13.0)).color(color)).selectable(false).sense(Sense::click()),
                 );
-                let (r, resp) = ui.allocate_exact_size(vec2(30.0, 16.0), Sense::click());
                 let (fill, stroke, knob_fill) = match (&block, on) {
                     (Some(_), _) => (t.input.gamma_multiply(0.5), t.border.gamma_multiply(0.7), t.text_dim.gamma_multiply(0.45)),
-                    (None, true) => (t.accent, t.accent, t.on_accent),
-                    (None, false) => (t.input, t.border_strong, t.text_dim),
+                    (None, true) => (t.green, t.green, egui::Color32::WHITE),
+                    (None, false) => (t.border_strong, t.border_strong, egui::Color32::WHITE),
                 };
-                ui.painter().rect(r, 8.0, fill, Stroke::new(1.0, stroke), egui::StrokeKind::Inside);
-                let knob = if on { r.max.x - 8.0 } else { r.min.x + 8.0 };
-                ui.painter().circle_filled(pos2(knob, r.center().y), 5.0, knob_fill);
+                ui.painter().rect(r, 10.0, fill, Stroke::new(1.0, stroke), egui::StrokeKind::Inside);
+                let knob = if on { r.max.x - 10.0 } else { r.min.x + 10.0 };
+                ui.painter().circle_filled(pos2(knob, r.center().y), 7.0, knob_fill);
                 let tip = block
                     .as_ref()
                     .map_or_else(|| tl!("AutoSave saves every change to the file (needs a saved document)").to_string(), |b| b.reason());
@@ -352,10 +354,14 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     // Account / community.
                     let (r, resp) = ui.allocate_exact_size(vec2(control_h, control_h), Sense::click());
-                    ui.painter().circle_filled(r.center(), control_h / 2.0 - 1.0, t.accent);
+                    ui.painter().circle_filled(
+                        r.center(),
+                        control_h / 2.0 - 1.0,
+                        if t.dark { t.checked } else { egui::Color32::from_rgb(0xDC, 0xE7, 0xFC) },
+                    );
                     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tl!("Account")));
                     let initials: String = app.session.user_initials().chars().take(2).collect();
-                    ui.painter().text(r.center(), Align2::CENTER_CENTER, initials, semibold(10.5), t.on_accent);
+                    ui.painter().text(r.center(), Align2::CENTER_CENTER, initials, semibold(12.0), t.accent_text);
                     if resp.on_hover_text(format!("{} — set your name in File › Options", app.session.author)).clicked() {
                         let _ = app.run("ui.backstage", json!({"value": true, "page": "options", "pane": "general"}));
                     }
@@ -381,26 +387,27 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                 });
             });
             // Centred title.
+            let status = if !app.has_document() {
+                String::new()
+            } else if app.session.dirty {
+                tl!("Edited").to_string()
+            } else if app.session.path.is_some() {
+                tl!("Saved").to_string()
+            } else {
+                tl!("Not saved").to_string()
+            };
             let title = if !app.has_document() {
                 // No document open (#1129): the app's name alone.
                 "Axion DocX".to_string()
             } else {
-                format!(
-                    "{} — {}",
-                    app.title_stem(),
-                    if app.session.dirty {
-                        tl!("Edited")
-                    } else if app.session.path.is_some() {
-                        tl!("Saved")
-                    } else {
-                        tl!("Not saved")
-                    }
-                )
+                app.title_stem()
             };
-            let font = TypeRung::Chrome.semibold();
-            let track = TypeRung::Chrome.tracking();
+            let status_text = if status.is_empty() { String::new() } else { format!(" · {status}") };
+            let status_w = text_width(ui.painter(), &status_text, &regular(14.0), 0.0, t.text_dim);
+            let font = semibold(14.0);
+            let track = 0.0;
             let cx = full.center().x;
-            let available = 2.0 * (cx - qat_end - 10.0).min(right_start - 10.0 - cx);
+            let available = 2.0 * (cx - qat_end - 10.0).min(right_start - 10.0 - cx) - status_w;
             let mut shown: String = title.chars().take(240).collect();
             if text_width(ui.painter(), &shown, &font, track, t.text) > available {
                 while !shown.is_empty() && text_width(ui.painter(), &format!("{shown}…"), &font, track, t.text) > available {
@@ -417,15 +424,9 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
                     let _ = app.run("file.rename", json!({}));
                 }
 
-                paint_text(
-                    ui.painter(),
-                    pos2(cx - w / 2.0, full.center().y - TypeRung::Chrome.line_height() / 2.0),
-                    Align2::LEFT_TOP,
-                    &shown,
-                    &font,
-                    track,
-                    t.text,
-                );
+                let x0 = cx - (w + status_w) / 2.0;
+                ui.painter().text(pos2(x0, full.center().y), Align2::LEFT_CENTER, &shown, font.clone(), t.text);
+                ui.painter().text(pos2(x0 + w, full.center().y), Align2::LEFT_CENTER, &status_text, regular(14.0), t.text_dim);
             }
         });
 }
@@ -437,7 +438,8 @@ fn search_box(app: &mut WordApp, ui: &mut Ui, control_h: f32) {
     let (r, resp) = ui.allocate_exact_size(vec2(260.0, control_h), Sense::click());
     let ph = tl!("Search commands and help");
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, ph));
-    ui.painter().rect(r, 6.0, if resp.hovered() { t.input } else { t.ribbon }, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    let edge = if resp.hovered() { t.accent.gamma_multiply(0.5) } else { t.border };
+    ui.painter().rect(r, control_h / 2.0, t.input, Stroke::new(1.0, edge), egui::StrokeKind::Inside);
     icons::paint(ui.painter(), Rect::from_center_size(pos2(r.min.x + 16.0, r.center().y), vec2(16.0, 16.0)), "search", t.text_dim, t.accent);
     let pfont = TypeRung::Control.regular();
     let ptrack = TypeRung::Control.tracking();
@@ -545,19 +547,39 @@ pub fn focus_ribbon(app: &mut WordApp, ctx: &egui::Context) {
 pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     // Axion: the status bar floats as a rounded card above the bottom edge.
+    // Axion: the status bar is three floating pills on the canvas: page and words on the left,
+    // the views and the zoom on the right.
     egui::Panel::bottom("status")
-        .exact_size(40.0)
+        .exact_size(54.0)
         .show_separator_line(false)
-        .frame(egui::Frame::NONE.fill(t.canvas).inner_margin(egui::Margin { left: 22, right: 22, top: 4, bottom: 8 }))
+        .frame(egui::Frame::NONE.fill(t.canvas).inner_margin(egui::Margin { left: 32, right: 32, top: 4, bottom: 12 }))
         .show(ui, |ui| {
-            let card = ui.max_rect().expand2(vec2(12.0, 0.0));
-            let lift = egui::Shadow { offset: [0, 2], blur: 10, spread: 0, color: t.page_shadow };
-            ui.painter().add(lift.as_shape(card, egui::CornerRadius::same(14)));
-            ui.painter().rect(card, 14.0, if t.dark { t.panel } else { egui::Color32::WHITE }, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+            let row = ui.max_rect();
+            let pill_shapes = [ui.painter().add(egui::Shape::Noop), ui.painter().add(egui::Shape::Noop), ui.painter().add(egui::Shape::Noop)];
+            let pill = |painter: &egui::Painter, idx: egui::layers::ShapeIdx, x0: f32, x1: f32| {
+                if x1 <= x0 {
+                    return;
+                }
+                let r = Rect::from_min_max(pos2(x0 - 16.0, row.min.y), pos2(x1 + 16.0, row.max.y));
+                let fill = if t.dark { t.panel } else { egui::Color32::WHITE };
+                let lift = egui::Shadow { offset: [0, 2], blur: 10, spread: 0, color: t.page_shadow };
+                painter.set(
+                    idx,
+                    egui::Shape::Vec(vec![
+                        lift.as_shape(r, egui::CornerRadius::same(19)).into(),
+                        egui::Shape::rect_filled(r, 19.0, fill),
+                        egui::Shape::rect_stroke(r, 19.0, Stroke::new(1.0, t.border), egui::StrokeKind::Inside),
+                    ]),
+                );
+            };
             // No document open (#1129): an empty status bar.
             if !app.has_document() {
                 return;
             }
+            let painter = ui.painter().clone();
+            let mut left_end = row.min.x;
+            let mut zoom_start = row.max.x;
+            let mut views_span = (row.max.x, row.max.x);
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(14.0, 0.0);
                 let l = app.session.layout();
@@ -570,11 +592,11 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     l.caret_on(&app.session.sel.focus, app.session.page_hint).map(|c| c.page + 1).unwrap_or(1)
                 };
                 let st = |ui: &mut Ui, s: &str| {
-                    let font = TypeRung::Caption.regular();
-                    let track = TypeRung::Caption.tracking();
+                    let font = regular(13.0);
+                    let track = 0.0;
                     let w = text_width(ui.painter(), s, &font, track, t.text_dim);
-                    let (r, resp) = ui.allocate_exact_size(vec2(w + 1.0, TypeRung::Caption.line_height()), Sense::click());
-                    paint_text(ui.painter(), pos2(r.min.x, r.min.y), Align2::LEFT_TOP, s, &font, track, t.text_dim);
+                    let (r, resp) = ui.allocate_exact_size(vec2(w + 1.0, 20.0), Sense::click());
+                    ui.painter().text(r.left_center(), Align2::LEFT_CENTER, s, font, t.text_dim);
                     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, s));
                     resp
                 };
@@ -584,8 +606,9 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                 {
                     let _ = app.run("ui.dialog", json!({"name": "goto"}));
                 }
-                // Axion: a phone-width bar keeps the page and the zoom only.
+                // Axion: a phone-width bar keeps the page and the zoom only; a tablet adds the words.
                 let narrow = ui.max_rect().width() < 640.0;
+                let tablet = ui.max_rect().width() < 1000.0;
                 let words = app.cached_word_count();
                 // A selected picture/shape/text box isn't a text selection: show the total.
                 let wtxt = if app.session.sel.is_collapsed() || crate::objects::selected(app).is_some() {
@@ -617,17 +640,20 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     lang.clone()
                 };
                 let tip = dictionary_problem(&lang, &unreadable, missing).unwrap_or_else(|| tl!("Language").to_string());
-                let resp = st(ui, &shown).on_hover_text(tip);
-                egui::Popup::menu(&resp).show(|ui| {
-                    ui.set_min_width(200.0);
-                    crate::ribbon::language_menu(ui, app);
-                });
+                if !tablet {
+                    let resp = st(ui, &shown).on_hover_text(tip);
+                    egui::Popup::menu(&resp).show(|ui| {
+                        ui.set_min_width(200.0);
+                        crate::ribbon::language_menu(ui, app);
+                    });
+                }
                 if app.session.doc.settings.track_changes {
                     st(ui, tl!("Track Changes: On"));
                 }
                 if app.session.prefs.overtype && st(ui, tl!("Overtype")).on_hover_text(tl!("Click to switch back to inserting")).clicked() {
                     let _ = app.run("text.overtype", json!({"value": false}));
                 }
+                left_end = ui.min_rect().max.x;
                 // The message is drawn where the row is now; the controls on the right are laid
                 // out first, so the message can be shortened to the space they leave (#2402): a
                 // long one (the path of a file that isn't there) must not be drawn over the
@@ -635,7 +661,7 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                 let msg_at = ui.cursor().min;
                 let mut controls_left = f32::INFINITY;
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.spacing_mut().item_spacing = vec2(4.0, 0.0);
+                    ui.spacing_mut().item_spacing = vec2(6.0, 0.0);
                     let reading = app.session.view.read_mode;
                     let z = (if reading { app.session.view.read_zoom } else { app.canvas.scale / crate::canvas::PX_PER_PT } * 100.0).round();
                     let ztxt = format!("{z}%");
@@ -659,14 +685,33 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     }
                     if narrow {
                         if small_icon(ui, "minus", tl!("Zoom Out")) {
-                            let _ = app.run(if reading { "view.readTextSize" } else { "view.zoomOut" }, if reading { json!({"value": (z - 10.0).max(75.0)}) } else { json!({}) });
+                            let _ = app.run(
+                                if reading { "view.readTextSize" } else { "view.zoomOut" },
+                                if reading { json!({"value": (z - 10.0).max(75.0)}) } else { json!({}) },
+                            );
                         }
+                        zoom_start = ui.min_rect().min.x;
+                        controls_left = zoom_start;
                         return;
                     }
                     // Reading zoom changes only reading presentation, never the normal view zoom.
                     let mut v = if reading { app.session.view.read_zoom } else { app.canvas.scale / crate::canvas::PX_PER_PT };
                     let slider = egui::Slider::new(&mut v, if reading { 0.75..=1.5 } else { 0.1..=5.0 }).logarithmic(!reading).show_value(false);
                     ui.spacing_mut().slider_width = 110.0;
+                    // Axion: a thin blue rail with a round knob.
+                    ui.spacing_mut().interact_size.y = 16.0;
+                    ui.spacing_mut().slider_rail_height = 4.0;
+                    ui.visuals_mut().slider_trailing_fill = true;
+                    ui.visuals_mut().selection.bg_fill = t.accent;
+                    ui.visuals_mut().widgets.inactive.bg_fill = t.border;
+                    ui.visuals_mut().widgets.inactive.fg_stroke = Stroke::new(0.0, t.accent);
+                    ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::new(3.0, egui::Color32::WHITE);
+                    ui.visuals_mut().widgets.hovered.bg_stroke = Stroke::new(3.0, egui::Color32::WHITE);
+                    let ws = &mut ui.visuals_mut().widgets;
+                    for w in [&mut ws.inactive, &mut ws.hovered, &mut ws.active] {
+                        w.corner_radius = egui::CornerRadius::same(8);
+                        w.bg_fill = if w.bg_fill == t.border { t.border } else { w.bg_fill };
+                    }
                     if ui.add(slider).changed() {
                         let command = if reading { "view.readTextSize" } else { "view.zoom" };
                         let _ = app.run(command, json!({"value": (v * 100.0).round()}));
@@ -678,7 +723,13 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                             let _ = app.run("view.zoomOut", json!({}));
                         }
                     }
-                    ui.add_space(10.0);
+                    zoom_start = ui.min_rect().min.x;
+                    if tablet {
+                        controls_left = zoom_start;
+                        return;
+                    }
+                    ui.add_space(40.0);
+                    let views_right = ui.min_rect().min.x - 6.0;
                     let mode = app.session.view.mode;
                     let read = app.session.view.read_mode;
                     for (icon, id, name, on) in [
@@ -686,19 +737,25 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                         ("printLayout", "view.printLayout", tl!("Print Layout"), mode == wordcraft_layout::ViewMode::Print && !read),
                         ("readMode", "view.readMode", tl!("Read Mode"), read),
                     ] {
-                        let (r, resp) = ui.allocate_exact_size(vec2(22.0, 20.0), Sense::click());
+                        let (r, resp) = ui.allocate_exact_size(vec2(30.0, 28.0), Sense::click());
                         if on {
-                            ui.painter().rect_filled(r, 3.0, t.checked);
+                            ui.painter().rect_filled(r, 8.0, t.checked);
                         } else if resp.hovered() {
-                            ui.painter().rect_filled(r, 3.0, t.hover);
+                            ui.painter().rect_filled(r, 8.0, t.hover);
                         }
-                        icons::paint(ui.painter(), r.shrink(3.0), icon, t.icon, t.accent);
+                        icons::paint(
+                            ui.painter(),
+                            Rect::from_center_size(r.center(), vec2(16.0, 16.0)),
+                            icon,
+                            if on { t.accent } else { t.icon },
+                            t.accent,
+                        );
                         resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, on, name));
                         if resp.on_hover_text(name).clicked() {
                             let _ = app.run(id, json!({}));
                         }
                     }
-                    ui.add_space(8.0);
+                    ui.add_space(6.0);
                     let focus = tl!("Focus");
                     let focus_w = ui.ctx().fonts_mut(|f| f.layout_no_wrap(focus.to_string(), regular(11.5), t.text_dim).size().x);
                     let (r, resp) = ui.allocate_exact_size(vec2((focus_w + 26.0).max(56.0), 20.0), Sense::click());
@@ -724,6 +781,7 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     if resp.clicked() {
                         let _ = app.run("view.focus", json!({}));
                     }
+                    views_span = (ui.min_rect().min.x, views_right);
                 });
                 if let Some((msg, at)) = &app.status_msg
                     && crate::now_ms() - at < 6000.0
@@ -744,16 +802,19 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     }
                 }
             });
+            pill(&painter, pill_shapes[0], row.min.x + 16.0, left_end);
+            pill(&painter, pill_shapes[1], zoom_start, row.max.x - 16.0);
+            pill(&painter, pill_shapes[2], views_span.0, views_span.1);
         });
 }
 
 fn small_icon(ui: &mut Ui, icon: &str, tip: &str) -> bool {
     let t = Tokens::get(ui.ctx());
-    let (r, resp) = ui.allocate_exact_size(vec2(18.0, 18.0), Sense::click());
+    let (r, resp) = ui.allocate_exact_size(vec2(24.0, 24.0), Sense::click());
     if resp.hovered() {
-        ui.painter().rect_filled(r, 3.0, t.hover);
+        ui.painter().rect_filled(r, 12.0, t.hover);
     }
-    icons::paint(ui.painter(), r.shrink(3.0), icon, t.icon, t.accent);
+    icons::paint(ui.painter(), Rect::from_center_size(r.center(), vec2(14.0, 14.0)), icon, t.icon, t.accent);
     resp.on_hover_text(tip).clicked()
 }
 
@@ -1087,14 +1148,13 @@ mod tests {
     }
 }
 
-
 /// The Axion mark drawn in code (a soft blue tile with the white "A" and its orbit), `rect` square.
 pub(crate) fn axion_mark(painter: &egui::Painter, rect: Rect) {
+    // The Axion DocX mark: a blue tile with a white page of text lines and a pen.
     let r = rect.width().min(rect.height());
     let rect = Rect::from_center_size(rect.center(), vec2(r, r));
     let radius = r * 0.25;
-    // A two-stop vertical gradient: light at the top, Axion blue at the bottom.
-    let (top, bottom) = (egui::Color32::from_rgb(0x8D, 0xB4, 0xF7), egui::Color32::from_rgb(0x35, 0x67, 0xD6));
+    let (top, bottom) = (egui::Color32::from_rgb(0x4C, 0x8D, 0xF6), egui::Color32::from_rgb(0x17, 0x3B, 0x8F));
     let mut mesh = egui::Mesh::default();
     let mut points = Vec::with_capacity(40);
     let corners = [
@@ -1109,10 +1169,11 @@ pub(crate) fn axion_mark(painter: &egui::Painter, rect: Rect) {
             points.push(c + vec2(a.cos(), a.sin()) * radius);
         }
     }
-    let at = |y: f32| top.lerp_to_gamma(bottom, ((y - rect.top()) / r).clamp(0.0, 1.0));
-    mesh.colored_vertex(rect.center(), at(rect.center().y));
+    // Diagonal: light at the top left, deep blue at the bottom right.
+    let at = |p: egui::Pos2| top.lerp_to_gamma(bottom, (((p.x - rect.left()) + (p.y - rect.top())) / (2.0 * r)).clamp(0.0, 1.0));
+    mesh.colored_vertex(rect.center(), at(rect.center()));
     for p in &points {
-        mesh.colored_vertex(*p, at(p.y));
+        mesh.colored_vertex(*p, at(*p));
     }
     let n = points.len() as u32;
     for i in 0..n {
@@ -1122,16 +1183,25 @@ pub(crate) fn axion_mark(painter: &egui::Painter, rect: Rect) {
     let u = r / 64.0;
     let pt = |x: f32, y: f32| rect.min + vec2(x * u, y * u);
     let white = egui::Color32::WHITE;
-    painter.add(egui::Shape::line(vec![pt(20.5, 46.0), pt(32.0, 17.5), pt(43.5, 46.0)], Stroke::new(5.5 * u, white)));
-    let orbit: Vec<egui::Pos2> = (0..=12)
-        .map(|k| {
-            let s = k as f32 / 12.0;
-            // Quadratic through (14.5, 36), (32, 30.5), (49.5, 35).
-            let x = 14.5 + 35.0 * s;
-            let y = (1.0 - s) * (1.0 - s) * 36.0 + 2.0 * (1.0 - s) * s * 26.0 + s * s * 35.0;
-            pt(x, y)
-        })
-        .collect();
-    painter.add(egui::Shape::line(orbit, Stroke::new(3.4 * u, white.gamma_multiply(0.9))));
-    painter.circle_filled(pt(49.5, 35.0), 2.6 * u, white);
+    let ink = egui::Color32::from_rgb(0x2C, 0x5F, 0xD3);
+    // The page with a folded corner.
+    let page = vec![pt(20.0, 11.0), pt(37.0, 11.0), pt(45.0, 19.0), pt(45.0, 53.5), pt(16.5, 53.5), pt(16.5, 11.0)];
+    painter.add(egui::Shape::convex_polygon(page, white, Stroke::NONE));
+    painter.add(egui::Shape::convex_polygon(
+        vec![pt(37.0, 11.0), pt(45.0, 19.0), pt(37.0, 19.0)],
+        egui::Color32::from_rgb(0xC7, 0xD8, 0xF7),
+        Stroke::NONE,
+    ));
+    for (y, w) in [(23.0, 20.0), (29.0, 20.0), (35.0, 20.0), (41.0, 12.0)] {
+        painter.rect_filled(Rect::from_min_size(pt(21.0, y), vec2(w * u, 2.8 * u)), 1.4 * u, ink.gamma_multiply(0.55));
+    }
+    // The pen, tilted across the page's corner.
+    let pen = [pt(47.5, 33.0), pt(52.5, 38.0), pt(43.0, 47.5), pt(38.5, 49.5), pt(40.5, 45.0)];
+    painter.add(egui::Shape::convex_polygon(pen.to_vec(), ink, Stroke::NONE));
+    painter.add(egui::Shape::convex_polygon(
+        vec![pt(41.0, 46.0), pt(43.0, 48.0), pt(38.5, 49.5)],
+        egui::Color32::from_rgb(0xF5, 0xC2, 0x6B),
+        Stroke::NONE,
+    ));
+    let _ = white;
 }

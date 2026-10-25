@@ -474,7 +474,7 @@ pub fn body(app: &mut WordApp, ui: &mut Ui, f: Form) -> bool {
         ui.text_edit_singleline(name);
         ui.end_row();
         ui.label(tl!("Style based on:"));
-        egui::ComboBox::from_id_salt("tstyle_base").width(200.0).selected_text(base_name).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("tstyle_base").icon(crate::widgets::combo_icon).width(200.0).selected_text(base_name).show_ui(ui, |ui| {
             for (sid, sname) in &styles {
                 if ui.selectable_label(sid == based_on, sname).clicked() && sid != based_on {
                     *based_on = sid.clone();
@@ -484,14 +484,15 @@ pub fn body(app: &mut WordApp, ui: &mut Ui, f: Form) -> bool {
         });
         ui.end_row();
         ui.label(tl!("Apply formatting to:"));
-        egui::ComboBox::from_id_salt("tstyle_region").width(200.0).selected_text(tl!(PARTS.get(*region).map_or("Whole Table", |(_, l)| *l))).show_ui(
-            ui,
-            |ui| {
+        egui::ComboBox::from_id_salt("tstyle_region")
+            .icon(crate::widgets::combo_icon)
+            .width(200.0)
+            .selected_text(tl!(PARTS.get(*region).map_or("Whole Table", |(_, l)| *l)))
+            .show_ui(ui, |ui| {
                 for (i, (_, n)) in PARTS.iter().enumerate() {
                     ui.selectable_value(region, i, tl!(*n));
                 }
-            },
-        );
+            });
         ui.end_row();
     });
     // A new style shows its new base's formatting; a modified one keeps its own.
@@ -525,13 +526,17 @@ pub fn body(app: &mut WordApp, ui: &mut Ui, f: Form) -> bool {
         ui.horizontal(|ui| {
             let current = LINE_STYLES.iter().find(|(s, _)| *s == pen.style).map_or("Single", |(_, n)| *n);
             ui.label(tl!("Style:"));
-            egui::ComboBox::from_id_salt("tstyle_pen_style").selected_text(tl!(current)).width(90.0).show_ui(ui, |ui| {
-                for (s, n) in LINE_STYLES {
-                    ui.selectable_value(&mut pen.style, s, tl!(n));
-                }
-            });
+            egui::ComboBox::from_id_salt("tstyle_pen_style").icon(crate::widgets::combo_icon).selected_text(tl!(current)).width(90.0).show_ui(
+                ui,
+                |ui| {
+                    for (s, n) in LINE_STYLES {
+                        ui.selectable_value(&mut pen.style, s, tl!(n));
+                    }
+                },
+            );
             ui.label(tl!("Width:"));
             egui::ComboBox::from_id_salt("tstyle_pen_width")
+                .icon(crate::widgets::combo_icon)
                 .selected_text(crate::i18n::fmt(tl!("{n} pt"), &[("n", &pen.width.to_string())]))
                 .width(70.0)
                 .show_ui(ui, |ui| {

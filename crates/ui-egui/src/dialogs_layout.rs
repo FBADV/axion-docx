@@ -555,7 +555,7 @@ fn envelopes_ui(app: &mut WordApp, ui: &mut Ui, f: &mut EnvelopeForm) -> bool {
     ui.horizontal(|ui| {
         ui.label(tl!("Envelope size:"));
         let label = |i: usize| ENVELOPE_SIZES.get(i).map(|(n, w, h)| envelope_label(n, *w, *h)).unwrap_or_default();
-        egui::ComboBox::from_id_salt("env_size").selected_text(label(f.size)).width(220.0).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("env_size").icon(crate::widgets::combo_icon).selected_text(label(f.size)).width(220.0).show_ui(ui, |ui| {
             for i in 0..ENVELOPE_SIZES.len() {
                 ui.selectable_value(&mut f.size, i, label(i));
             }
@@ -672,11 +672,14 @@ fn labels_ui(app: &mut WordApp, ui: &mut Ui, f: &mut LabelsForm) -> bool {
     });
     ui.horizontal(|ui| {
         ui.label(tl!("Label:"));
-        egui::ComboBox::from_id_salt("label_product").selected_text(product_label(f.product)).width(300.0).show_ui(ui, |ui| {
-            for i in 0..LABEL_PRODUCTS.len() {
-                ui.selectable_value(&mut f.product, i, product_label(i));
-            }
-        });
+        egui::ComboBox::from_id_salt("label_product").icon(crate::widgets::combo_icon).selected_text(product_label(f.product)).width(300.0).show_ui(
+            ui,
+            |ui| {
+                for i in 0..LABEL_PRODUCTS.len() {
+                    ui.selectable_value(&mut f.product, i, product_label(i));
+                }
+            },
+        );
     });
     let (rows, cols) = LABEL_PRODUCTS.get(f.product).map_or((1, 1), |p| (p.rows, p.cols));
     heading(ui, "Print");
@@ -755,7 +758,7 @@ fn formula_ui(app: &mut WordApp, ui: &mut Ui, f: &mut FormulaForm) -> bool {
     ui.horizontal(|ui| {
         ui.label(tl!("Paste function:"));
         let mut picked = None;
-        egui::ComboBox::from_id_salt("formula_paste").selected_text("").width(140.0).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("formula_paste").icon(crate::widgets::combo_icon).selected_text("").width(140.0).show_ui(ui, |ui| {
             for name in FORMULA_FUNCTIONS {
                 if ui.selectable_label(false, name).clicked() {
                     picked = Some(name);
@@ -820,12 +823,15 @@ impl SortForm {
 fn sort_ui(app: &mut WordApp, ui: &mut Ui, f: &mut SortForm) -> bool {
     heading(ui, "Sort by");
     ui.horizontal(|ui| {
-        egui::ComboBox::from_id_salt("sort_column").selected_text(f.column_label(f.column)).width(180.0).show_ui(ui, |ui| {
-            for i in 0..f.headers.len() {
-                let label = f.column_label(i);
-                ui.selectable_value(&mut f.column, i, label);
-            }
-        });
+        egui::ComboBox::from_id_salt("sort_column").icon(crate::widgets::combo_icon).selected_text(f.column_label(f.column)).width(180.0).show_ui(
+            ui,
+            |ui| {
+                for i in 0..f.headers.len() {
+                    let label = f.column_label(i);
+                    ui.selectable_value(&mut f.column, i, label);
+                }
+            },
+        );
         ui.vertical(|ui| {
             ui.radio_value(&mut f.descending, false, tl!("Ascending"));
             ui.radio_value(&mut f.descending, true, tl!("Descending"));
@@ -1435,7 +1441,7 @@ fn page_numbers_ui(app: &mut WordApp, ui: &mut Ui, f: &mut PageNumbersForm) -> b
     ui.add_space(4.0);
     ui.label(tl!("Number format"));
     let label = crate::dialogs_notes::FORMATS.iter().find(|(v, _)| *v == f.format.as_str()).map(|(_, l)| *l).unwrap_or_default();
-    egui::ComboBox::from_id_salt("pnum_format").selected_text(label).width(150.0).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("pnum_format").icon(crate::widgets::combo_icon).selected_text(label).width(150.0).show_ui(ui, |ui| {
         for (v, l) in crate::dialogs_notes::FORMATS {
             ui.selectable_value(&mut f.format, v.to_string(), l);
         }
