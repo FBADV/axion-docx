@@ -301,6 +301,12 @@ pub fn title_bar(app: &mut WordApp, ui: &mut Ui) {
             let mut right_start = full.max.x;
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
+                // Axion: the mark and the app's name open the title bar.
+                let (mark, _) = ui.allocate_exact_size(vec2(control_h, control_h), Sense::hover());
+                axion_mark(ui.painter(), mark);
+                ui.add_space(6.0);
+                ui.add(egui::Label::new(egui::RichText::new("Axion DocX").font(semibold(13.0)).color(t.text)).selectable(false));
+                ui.add_space(14.0);
                 // AutoSave switch: greyed out, with the reason as its tooltip, when AutoSave can't
                 // cover the document (#196, #176); clicking it then offers Save As where that helps.
                 let block = app.autosave_block();
@@ -538,15 +544,16 @@ pub fn focus_ribbon(app: &mut WordApp, ctx: &egui::Context) {
 
 pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
+    // Axion: the status bar floats as a rounded card above the bottom edge.
     egui::Panel::bottom("status")
-        .exact_size(26.0)
-        .frame(
-            egui::Frame::NONE
-                .fill(t.status_bar)
-                .inner_margin(egui::Margin { left: 12, right: 12, top: 0, bottom: 0 })
-                .stroke(Stroke::new(1.0, t.border)),
-        )
+        .exact_size(40.0)
+        .show_separator_line(false)
+        .frame(egui::Frame::NONE.fill(t.canvas).inner_margin(egui::Margin { left: 22, right: 22, top: 4, bottom: 8 }))
         .show(ui, |ui| {
+            let card = ui.max_rect().expand2(vec2(12.0, 0.0));
+            let lift = egui::Shadow { offset: [0, 2], blur: 10, spread: 0, color: t.page_shadow };
+            ui.painter().add(lift.as_shape(card, egui::CornerRadius::same(14)));
+            ui.painter().rect(card, 14.0, if t.dark { t.panel } else { egui::Color32::WHITE }, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
             // No document open (#1129): an empty status bar.
             if !app.has_document() {
                 return;
@@ -577,6 +584,8 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                 {
                     let _ = app.run("ui.dialog", json!({"name": "goto"}));
                 }
+                // Axion: a phone-width bar keeps the page and the zoom only.
+                let narrow = ui.max_rect().width() < 640.0;
                 let words = app.cached_word_count();
                 // A selected picture/shape/text box isn't a text selection: show the total.
                 let wtxt = if app.session.sel.is_collapsed() || crate::objects::selected(app).is_some() {
@@ -585,7 +594,7 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                     let sw = wordcraft_doc::count_words(&app.session.selected_text());
                     crate::i18n::fmt(tl!("{selected} of {words} words"), &[("selected", &sw.to_string()), ("words", &words.to_string())])
                 };
-                if st(ui, &wtxt).clicked() {
+                if !narrow && st(ui, &wtxt).clicked() {
                     let _ = app.run("ui.dialog", json!({"name": "wordCount"}));
                 }
                 if app.session.sel.focus.story != StoryRef::Body && !crate::canvas::in_text_box(app) {
@@ -647,6 +656,12 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                         } else {
                             let _ = app.run("view.zoomIn", json!({}));
                         }
+                    }
+                    if narrow {
+                        if small_icon(ui, "minus", tl!("Zoom Out")) {
+                            let _ = app.run(if reading { "view.readTextSize" } else { "view.zoomOut" }, if reading { json!({"value": (z - 10.0).max(75.0)}) } else { json!({}) });
+                        }
+                        return;
                     }
                     // Reading zoom changes only reading presentation, never the normal view zoom.
                     let mut v = if reading { app.session.view.read_zoom } else { app.canvas.scale / crate::canvas::PX_PER_PT };
@@ -1070,4 +1085,53 @@ mod tests {
         assert!(h.state().autosaves(), "and clicking it again turns it back on");
         let _ = std::fs::remove_dir_all(dir);
     }
+}
+
+
+/// The Axion mark drawn in code (a soft blue tile with the white "A" and its orbit), `rect` square.
+pub(crate) fn axion_mark(painter: &egui::Painter, rect: Rect) {
+    let r = rect.width().min(rect.height());
+    let rect = Rect::from_center_size(rect.center(), vec2(r, r));
+    let radius = r * 0.25;
+    // A two-stop vertical gradient: light at the top, Axion blue at the bottom.
+    let (top, bottom) = (egui::Color32::from_rgb(0x8D, 0xB4, 0xF7), egui::Color32::from_rgb(0x35, 0x67, 0xD6));
+    let mut mesh = egui::Mesh::default();
+    let mut points = Vec::with_capacity(40);
+    let corners = [
+        (pos2(rect.right() - radius, rect.top() + radius), -90.0f32),
+        (pos2(rect.right() - radius, rect.bottom() - radius), 0.0),
+        (pos2(rect.left() + radius, rect.bottom() - radius), 90.0),
+        (pos2(rect.left() + radius, rect.top() + radius), 180.0),
+    ];
+    for (c, start) in corners {
+        for k in 0..=6 {
+            let a = (start + 90.0 * k as f32 / 6.0).to_radians();
+            points.push(c + vec2(a.cos(), a.sin()) * radius);
+        }
+    }
+    let at = |y: f32| top.lerp_to_gamma(bottom, ((y - rect.top()) / r).clamp(0.0, 1.0));
+    mesh.colored_vertex(rect.center(), at(rect.center().y));
+    for p in &points {
+        mesh.colored_vertex(*p, at(p.y));
+    }
+    let n = points.len() as u32;
+    for i in 0..n {
+        mesh.add_triangle(0, 1 + i, 1 + (i + 1) % n);
+    }
+    painter.add(mesh);
+    let u = r / 64.0;
+    let pt = |x: f32, y: f32| rect.min + vec2(x * u, y * u);
+    let white = egui::Color32::WHITE;
+    painter.add(egui::Shape::line(vec![pt(20.5, 46.0), pt(32.0, 17.5), pt(43.5, 46.0)], Stroke::new(5.5 * u, white)));
+    let orbit: Vec<egui::Pos2> = (0..=12)
+        .map(|k| {
+            let s = k as f32 / 12.0;
+            // Quadratic through (14.5, 36), (32, 30.5), (49.5, 35).
+            let x = 14.5 + 35.0 * s;
+            let y = (1.0 - s) * (1.0 - s) * 36.0 + 2.0 * (1.0 - s) * s * 26.0 + s * s * 35.0;
+            pt(x, y)
+        })
+        .collect();
+    painter.add(egui::Shape::line(orbit, Stroke::new(3.4 * u, white.gamma_multiply(0.9))));
+    painter.circle_filled(pt(49.5, 35.0), 2.6 * u, white);
 }

@@ -311,8 +311,9 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     }
     // Tab strip.
     egui::Panel::top("tabs")
-        .exact_size(30.0)
-        .frame(egui::Frame::NONE.fill(t.tab_strip).inner_margin(egui::Margin { left: 8, right: 10, top: 0, bottom: 0 }))
+        .exact_size(36.0)
+        .show_separator_line(false)
+        .frame(egui::Frame::NONE.fill(t.tab_strip).inner_margin(egui::Margin { left: 12, right: 12, top: 2, bottom: 2 }))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
@@ -354,7 +355,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                         let (share_size, share_text) =
                             if plan.buttons < 2 { (((share_w + 36.0).max(74.0), 24.0), true) } else { ((30.0, 24.0), false) };
                         let (r, resp) = ui.allocate_exact_size(vec2(share_size.0, share_size.1), Sense::click());
-                        ui.painter().rect_filled(r, 4.0, if resp.hovered() { t.accent_text } else { t.accent });
+                        ui.painter().rect_filled(r, 12.0, if resp.hovered() { t.accent_text } else { t.accent });
                         let icon_x = if share_text { r.min.x + 14.0 } else { r.center().x };
                         icons::paint(
                             ui.painter(),
@@ -416,10 +417,19 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                             }
                             let active = app.ui.tab == tab && !app.ui.backstage;
                             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, active, shown));
-                            if resp.hovered() && !active {
-                                ui.painter().rect_filled(r.shrink2(vec2(0.0, 4.0)), 4.0, t.hover);
+                            // Axion: tabs are pills. File is the accent pill; the current tab a raised card.
+                            let file = tab == "File";
+                            let pill = r.shrink2(vec2(1.0, 2.0));
+                            if file {
+                                ui.painter().rect_filled(pill, 13.0, if resp.hovered() { t.accent_text } else { t.accent });
+                            } else if active {
+                                let lift = egui::Shadow { offset: [0, 1], blur: 6, spread: 0, color: t.page_shadow };
+                                ui.painter().add(lift.as_shape(pill, egui::CornerRadius::same(13)));
+                                ui.painter().rect_filled(pill, 13.0, if t.dark { t.hover } else { egui::Color32::WHITE });
+                            } else if resp.hovered() {
+                                ui.painter().rect_filled(pill, 13.0, t.hover);
                             }
-                            let color = if contextual || active { t.accent_text } else { t.text };
+                            let color = if file { t.on_accent } else if contextual || active { t.accent_text } else { t.text };
                             if cut {
                                 let mut job = egui::text::LayoutJob::single_section(
                                     shown.to_string(),
@@ -443,10 +453,6 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                                 );
                             }
                             let resp = if cut { resp.on_hover_text(shown) } else { resp };
-                            if active {
-                                let u = Rect::from_center_size(pos2(r.center().x, r.max.y - 2.0), vec2(w - 16.0, 3.0));
-                                ui.painter().rect_filled(u, 2.0, t.accent);
-                            }
                             if resp.clicked() {
                                 let _ = app.run("ui.tab", json!({"tab": tab}));
                             }

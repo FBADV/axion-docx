@@ -536,6 +536,8 @@ fn migrate_units(v: &mut Value) {
 
 /// The application.
 pub struct WordApp {
+    /// Axion: the window was phone-width (with a document open) last frame.
+    axion_phone: bool,
     pub session: Session,
     pub ui: UiState,
     pub services: Services,
@@ -703,6 +705,7 @@ impl WordApp {
             wordcraft_engine::set_system_locale(&tag);
         }
         WordApp {
+            axion_phone: false,
             session,
             ui: UiState::default(),
             services,
@@ -2470,6 +2473,12 @@ impl WordApp {
             return;
         }
         let t = theme::Tokens::get(&ctx);
+        // Axion: on a phone-width window the page opens at Page Width, so the text fits the screen.
+        let phone = ctx.content_rect().width() < 700.0;
+        if phone && !self.axion_phone && self.has_document() {
+            let _ = self.run("view.pageWidth", json!({}));
+        }
+        self.axion_phone = phone && self.has_document();
         self.escape_free = self.dialog.is_none() && !self.ui.backstage && self.ui.keytips == keytips::Phase::Off && !egui::Popup::is_any_open(&ctx);
         // Keytips are read before layout so the frame paints the new state; badges paint after
         // the ribbon so they sit on top of it.

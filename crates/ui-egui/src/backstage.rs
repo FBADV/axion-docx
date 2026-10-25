@@ -75,11 +75,8 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             // Axion: the mark and the app's name head the side bar.
             ui.horizontal(|ui| {
                 ui.add_space(18.0);
-                ui.add(
-                    egui::Image::from_bytes("bytes://axion-mark.svg", include_bytes!("../../../assets/brand/axion-mark.svg"))
-                        .fit_to_exact_size(vec2(30.0, 30.0))
-                        .alt_text("Axion"),
-                );
+                let (mark, _) = ui.allocate_exact_size(vec2(30.0, 30.0), Sense::hover());
+                crate::chrome::axion_mark(ui.painter(), mark);
                 ui.add_space(4.0);
                 ui.label(egui::RichText::new("Axion DocX").font(semibold(15.5)).color(t.text));
             });
