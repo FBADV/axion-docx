@@ -1,0 +1,6 @@
+[alias]
+xtask = "run --package xtask --"
+
+[env]
+# Axion DocX: the interface translations are vendored (rebranded craft-i18n catalogs).
+CRAFT_I18N_DIR = { value = "vendor/craft-i18n", relative = true }
